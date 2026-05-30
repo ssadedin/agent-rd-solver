@@ -131,7 +131,48 @@ Reference data expected under `$WORKFLOW_DATA` (configurable in `config/tools.ya
 HPO `phenotype_to_genes.txt`, OMIM/MONDO maps, gnomAD constraint, MANE, ClinGen gene–disease
 validity, RefSeq/Ensembl GTF, segdup/repeat BED tracks.
 
-## 7. Running
+## 7. Setup
+
+```bash
+pip install -r requirements.txt          # requests, PyYAML, jsonschema, anthropic
+# system tools (bcftools/samtools/bedtools/igv/bgzip/tabix) are provisioned per config/tools.yaml
+```
+
+The **gene BED** used by the SV stage is fetched automatically from an authoritative source —
+no manual curation:
+
+```bash
+# GENCODE basic annotation (default, versioned, GRCh38/GRCh37), MANE-Select genes only:
+python3 -m lib.fetch_gene_bed --assembly GRCh38 --mane-only --out $WORKFLOW_DATA/tracks/gene.bed.gz
+
+# or UCSC MANE/ncbiRefSeqSelect track:
+python3 -m lib.fetch_gene_bed --assembly GRCh38 --source ucsc --out tracks/gene.bed.gz
+
+# optionally restrict to a PanelApp Australia panel (coordinates from GENCODE, genes from the panel):
+python3 -m lib.fetch_gene_bed --assembly GRCh38 --panelapp 250 --out panel.bed.gz
+```
+
+Sources: **GENCODE** (EBI, authoritative reference gene model) and **UCSC** are reached directly;
+**PanelApp Australia** (`panelapp-aus.org`) supplies the clinical gene whitelist + green/
+amber/red confidence. If a source is unreachable the fetcher exits with explicit guidance and a
+`--gene-list` fallback (supply a plain symbol list).
+
+## 8. Validating inputs
+
+Inputs are validated before any analysis runs; the workflow aborts with actionable, *sourcing-
+aware* errors (how to annotate/compress/index/obtain each file) rather than failing deep in a
+stage. Run the check standalone:
+
+```bash
+python3 -m lib.validate_inputs \
+  --snv-vcf snv_indel.vcf.gz --sv-vcf sv_cnv.vcf.gz --bam proband.bam \
+  --hpo phenotype.hpo --notes clinical_notes.txt --gene-bed tracks/gene.bed.gz
+```
+
+It checks: bgzip+tabix indexing, VEP `CSQ` presence, BAM sort/index, HPO id validity, non-empty
+notes, and chr-naming concordance across inputs vs the declared assembly.
+
+## 9. Running
 
 ```bash
 python3 orchestrator.py \
@@ -141,10 +182,27 @@ python3 orchestrator.py \
   --bam      inputs/proband.bam \
   --hpo      inputs/phenotype.hpo \
   --notes    inputs/clinical_notes.txt \
+  --gene-bed tracks/gene.bed.gz \
   --assembly GRCh38 \
   --out      results/
 
 # results/report.json   results/report.html   results/igv/*.png   results/audit/
 ```
+
+The reasoning stages require an LLM backend wired into `AgentRunner.complete()` (see the
+docstring in `orchestrator.py`); deterministic stages, validation, fixtures, gene-BED fetching
+and rendering run without it.
+
+## 10. Try it without real data (fixtures + smoke test)
+
+```bash
+python3 examples/make_fixtures.py     # toy VCF/BAM/HPO/notes in examples/fixtures/
+python3 tests/smoke_test.py           # exercises validation, SV triage, ACMG, schema, render
+```
+
+The fixtures are valid-but-synthetic inputs to exercise the deterministic stages offline. A
+worked end-to-end output (no LLM needed to view it) is in
+[`examples/example_report.json`](examples/example_report.json) →
+[`examples/example_report.html`](examples/example_report.html).
 
 See [`config/thresholds.yaml`](config/thresholds.yaml) for every tunable QC / frequency cut.

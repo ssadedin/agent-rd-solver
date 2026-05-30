@@ -38,6 +38,7 @@ reference_data:
     clingen_dosage:           "clingen/dosage-sensitivity.csv"
     gnomad_constraint:        "gnomad/constraint_metrics.tsv"
     mane_summary:             "mane/MANE.summary.txt"
+    gene_bed:                 "tracks/gene.bed.gz"   # build via: python3 -m lib.fetch_gene_bed
     segdup_bed:               "tracks/segdups.bed.gz"
     repeat_bed:               "tracks/repeatmasker.bed.gz"
     lcr_bed:                  "tracks/low_complexity.bed.gz"

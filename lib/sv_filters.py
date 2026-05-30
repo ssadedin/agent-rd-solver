@@ -45,24 +45,48 @@ class SVRow:
     flags: list[str] = field(default_factory=list)
 
 
+def _header_tags(vcf: str) -> set[str]:
+    """Tags actually declared in the header. bcftools query errors hard on absent tags, and
+    SV vs read-depth CNV callers expose different INFO/FORMAT fields, so we query only what
+    exists and treat the rest as null."""
+    hdr = _run(f"bcftools view -h {shlex.quote(vcf)}")
+    tags = set()
+    for line in hdr.splitlines():
+        m = None
+        if line.startswith("##INFO=<ID="):
+            m = "INFO/" + line.split("ID=", 1)[1].split(",", 1)[0]
+        elif line.startswith("##FORMAT=<ID="):
+            m = "FMT/" + line.split("ID=", 1)[1].split(",", 1)[0]
+        if m:
+            tags.add(m)
+    return tags
+
+
 def extract_sv_rows(vcf: str) -> list[SVRow]:
-    fmt = ("%CHROM\\t%POS\\t%INFO/END\\t%INFO/SVTYPE\\t%INFO/SVLEN\\t%ID\\t%FILTER\\t"
-           "%INFO/CN\\t[%PR]\\t[%SR]\\n")
+    tags = _header_tags(vcf)
+    # column order is fixed; absent optional tags are emitted as "." so positions stay aligned
+    cols = ["%CHROM", "%POS",
+            "%INFO/END" if "INFO/END" in tags else ".",
+            "%INFO/SVTYPE" if "INFO/SVTYPE" in tags else ".",
+            "%INFO/SVLEN" if "INFO/SVLEN" in tags else ".",
+            "%ID", "%FILTER",
+            "%INFO/CN" if "INFO/CN" in tags else ".",
+            "[%PR]" if "FMT/PR" in tags else ".",
+            "[%SR]" if "FMT/SR" in tags else "."]
+    fmt = "\\t".join(cols) + "\\n"
     out = _run(f"bcftools query -f '{fmt}' {shlex.quote(vcf)}")
     rows = []
     for line in out.splitlines():
         c = line.split("\t")
-        if len(c) < 7:
+        if len(c) < 10:
             continue
-        chrom, pos, end, svtype, svlen, vid, filt = c[:7]
-        cn = _float(c[7]) if len(c) > 7 else None
-        pr = _support(c[8]) if len(c) > 8 else None
-        sr = _support(c[9]) if len(c) > 9 else None
+        chrom, pos, end, svtype, svlen, vid, filt, cn_s, pr_s, sr_s = c[:10]
         start = int(pos)
         end_i = _int(end) or (start + abs(_int(svlen) or 0))
-        rows.append(SVRow(chrom=chrom, start=start, end=end_i, sv_type=svtype or "UNKNOWN",
-                          svlen=_int(svlen), vcf_id=vid, filter=filt, copy_number=cn,
-                          paired_support=pr, split_support=sr))
+        rows.append(SVRow(chrom=chrom, start=start, end=end_i,
+                          sv_type=(svtype if svtype != "." else "UNKNOWN"),
+                          svlen=_int(svlen), vcf_id=vid, filter=filt, copy_number=_float(cn_s),
+                          paired_support=_support(pr_s), split_support=_support(sr_s)))
     return rows
 
 

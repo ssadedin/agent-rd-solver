@@ -1,0 +1,11 @@
+# Python dependencies for the rare disease workflow.
+# System tools (bcftools, samtools, bedtools, igv, bgzip/tabix) are provisioned separately
+# in the sandbox — see config/tools.yaml. These are the Python-side requirements only.
+
+requests>=2.31        # API clients (ClinVar/PubMed/Ensembl/UCSC/gnomAD) + gene-BED fetching
+PyYAML>=6.0           # config loading (tools.yaml, thresholds.yaml)
+jsonschema>=4.20      # report.json validation against schema/
+
+# Required only to run the agentic stages (AgentRunner.complete()). The deterministic
+# stages, input validation, fixtures, gene-BED fetching and HTML rendering work without it.
+anthropic>=0.40       # LLM backend for the reasoning/adversarial stages

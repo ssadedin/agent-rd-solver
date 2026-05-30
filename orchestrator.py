@@ -29,7 +29,7 @@ from pathlib import Path
 import yaml
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from lib import vcf_filters, sv_filters, igv_runner, acmg  # noqa: E402
+from lib import vcf_filters, sv_filters, igv_runner, acmg, validate_inputs  # noqa: E402
 
 ROOT = Path(__file__).resolve().parent
 PROMPTS = ROOT / "prompts"
@@ -153,6 +153,12 @@ def adversarial_debate(proposer: AgentRunner, reviewer: AgentRunner,
 
 # --------------------------------------------------------------------------- main pipeline
 def run(args) -> None:
+    # ---- validate inputs FIRST: clear, actionable errors before any analysis -------------
+    vres = validate_inputs.validate(args)
+    validate_inputs.print_report(vres)
+    if not vres.ok:
+        sys.exit("Aborting: fix the input issues above (see sourcing guidance) and re-run.")
+
     out = Path(args.out)
     audit = out / "audit"
     igv_dir = out / "igv"
@@ -205,7 +211,8 @@ def run(args) -> None:
     # ---- Stage 3: SV/CNV triage --------------------------------------------------------
     sv_rows = sv_filters.extract_sv_rows(args.sv_vcf)
     sv_filters.apply_sv_qc(sv_rows)
-    sv_filters.annotate_gene_overlap(sv_rows, refs.get("mane_summary"))  # gene bed expected
+    gene_bed = args.gene_bed or refs.get("gene_bed")
+    sv_filters.annotate_gene_overlap(sv_rows, gene_bed)  # see lib/fetch_gene_bed.py to build it
     sv_filters.annotate_population_overlap(sv_rows, refs.get("population_cnv_bed"))
     sv_filters.annotate_segdup(sv_rows, refs.get("segdup_bed"))
     sv_stage = proposer.run_stage("03_sv_triage.md", {
@@ -338,6 +345,7 @@ def main() -> None:
     ap.add_argument("--bam", required=True)
     ap.add_argument("--hpo", required=True)
     ap.add_argument("--notes", required=True)
+    ap.add_argument("--gene-bed", help="gene BED for SV overlap; build with lib/fetch_gene_bed.py")
     ap.add_argument("--assembly", default="GRCh38", choices=["GRCh38", "GRCh37"])
     ap.add_argument("--out", default="results/")
     run(ap.parse_args())

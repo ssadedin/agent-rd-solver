@@ -1,0 +1,7 @@
+__pycache__/
+*.pyc
+# run outputs / caches (examples/fixtures and examples/example_* stay version-controlled)
+results/
+audit/
+api_cache/
+examples/_smoke_render.html
