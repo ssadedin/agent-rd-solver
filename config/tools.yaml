@@ -1,0 +1,62 @@
+# Expected runtime tools and reference data. The orchestrator probes versions at startup
+# and records them in report.json -> pipeline.tool_versions for provenance.
+
+binaries:
+  bcftools:   { min_version: "1.18", version_cmd: "bcftools --version" }
+  tabix:      { min_version: "1.18", version_cmd: "tabix --version" }
+  bgzip:      { min_version: "1.18", version_cmd: "bgzip --version" }
+  samtools:   { min_version: "1.18", version_cmd: "samtools --version" }
+  bedtools:   { min_version: "2.31", version_cmd: "bedtools --version" }
+  igv:        { min_version: "2.17", version_cmd: "igv --version", headless_wrapper: "xvfb-run -a" }
+  python3:    { min_version: "3.10", version_cmd: "python3 --version" }
+
+apis:
+  ncbi_eutils:
+    base: "https://eutils.ncbi.nlm.nih.gov/entrez/eutils"
+    api_key_env: "NCBI_API_KEY"
+    rate_limit_per_sec: 10          # with key; 3 without
+    used_for: ["clinvar", "pubmed"]
+  ensembl:
+    base: "https://rest.ensembl.org"
+    grch37_base: "https://grch37.rest.ensembl.org"
+    used_for: ["vep_lookup", "regulatory", "transcript", "phenotype", "xrefs"]
+  ucsc:
+    base: "https://api.genome.ucsc.edu"
+    used_for: ["segdups", "repeatmasker", "phylop", "phastcons", "gc"]
+  gnomad:
+    base: "https://gnomad.broadinstitute.org/api"
+    used_for: ["population_frequency", "constraint", "structural_variants"]
+
+reference_data:
+  root_env: "WORKFLOW_DATA"
+  files:
+    hpo_phenotype_to_genes:   "hpo/phenotype_to_genes.txt"
+    hpo_obo:                  "hpo/hp.obo"
+    omim_genemap2:            "omim/genemap2.txt"          # license required
+    mondo:                    "mondo/mondo.obo"
+    clingen_gene_validity:    "clingen/gene-disease-validity.csv"
+    clingen_dosage:           "clingen/dosage-sensitivity.csv"
+    gnomad_constraint:        "gnomad/constraint_metrics.tsv"
+    mane_summary:             "mane/MANE.summary.txt"
+    segdup_bed:               "tracks/segdups.bed.gz"
+    repeat_bed:               "tracks/repeatmasker.bed.gz"
+    lcr_bed:                  "tracks/low_complexity.bed.gz"
+    population_cnv_bed:       "tracks/gnomad_sv_benign.bed.gz"
+
+igv:
+  genome_id_grch38: "hg38"
+  genome_id_grch37: "hg19"
+  flank_bp: 80                       # window padding around a variant for SNV/indel snapshots
+  sv_view_max_bp: 5000               # cap full-SV view; otherwise snapshot both breakpoints
+  preferences:
+    SAM.SHOW_SOFT_CLIPPED: "true"
+    SAM.FLAG_UNMAPPED_PAIR: "true"
+    SAM.COLOR_BY: "READ_STRAND"
+    SAM.SHADE_BASE_QUALITY: "true"
+    SAM.MAX_VISIBLE_RANGE: "1000"
+
+llm:
+  proposer_model: "claude-opus-4-8"          # evidence gathering, synthesis
+  reviewer_model: "claude-opus-4-8"          # adversarial red team (kept separate context)
+  temperature: 0.0
+  max_tool_iterations_per_stage: 40

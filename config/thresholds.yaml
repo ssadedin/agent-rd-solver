@@ -1,0 +1,83 @@
+# Tunable thresholds for the rare disease workflow.
+# Every hard cut applied by lib/ code is defined here so the run is reproducible and auditable.
+# Rationale is given inline because reviewers must be able to challenge each value.
+
+snv_indel_qc:
+  require_filter_pass: true          # honour caller FILTER column; PASS only by default
+  min_depth: 10                      # below this, genotype is unreliable
+  min_genotype_quality: 20
+  min_alt_reads: 4
+  het_allele_balance_min: 0.25       # below -> possible artifact / mosaicism flag (not auto-drop)
+  het_allele_balance_max: 0.75       # above -> possible deletion/ref dropout
+  hom_allele_balance_min: 0.85
+  min_mapping_quality: 40
+  max_strand_bias_phred: 60          # FS/SOR style; high -> strand artifact
+  flag_segdup: true                  # do not auto-drop; flag for mandatory IGV review
+  flag_low_complexity: true
+  flag_homopolymer_ge: 6
+
+frequency:
+  # Frequencies are interpreted PER inheritance model. These are coarse backstops;
+  # the per-disease max-credible-AF (Whiffin et al.) is computed in lib/acmg.py and
+  # overrides these when prevalence/penetrance are known.
+  gnomad_version: "v4.1"
+  dominant_max_af: 0.0001            # 1e-4 global; popmax also checked
+  recessive_max_af: 0.01            # carriers common; rely on hom/comphet logic + hom count
+  recessive_max_hom_count: 2         # observed homozygotes in gnomAD healthy adults
+  xlinked_max_hemi_count: 1
+  ba1_af: 0.05                       # ACMG BA1 stand-alone benign
+  bs1_af_dominant: 0.001
+  apply_popmax: true
+
+sv_cnv_qc:
+  min_sv_size_bp: 50
+  max_benign_cnv_overlap_fraction: 0.70   # vs population CNV map (e.g. gnomAD-SV, DGV gold)
+  require_gene_overlap_or_regulatory: true
+  min_paired_read_support: 4
+  min_split_read_support: 3
+  min_callers_for_high_conf: 1
+  cnv_min_size_bp: 10000
+  flag_breakpoint_in_segdup: true
+
+consequence_priority:        # consequences retained for SNV/indel candidacy (others triaged out unless splice/regulatory evidence)
+  high_impact:
+    - transcript_ablation
+    - splice_acceptor_variant
+    - splice_donor_variant
+    - stop_gained
+    - frameshift_variant
+    - stop_lost
+    - start_lost
+    - transcript_amplification
+  moderate_impact:
+    - inframe_insertion
+    - inframe_deletion
+    - missense_variant
+    - protein_altering_variant
+  conditional:               # kept only if predictor/conservation/clinvar support
+    - splice_region_variant
+    - splice_donor_5th_base_variant
+    - synonymous_variant     # only if SpliceAI / ClinVar flag
+    - intron_variant         # only if deep-intronic SpliceAI hit or known
+    - 5_prime_UTR_variant
+    - 3_prime_UTR_variant
+
+in_silico:
+  revel_pathogenic: 0.7
+  revel_benign: 0.15
+  cadd_phred_supporting: 20
+  alphamissense_pathogenic: 0.564
+  spliceai_supporting: 0.2
+  spliceai_strong: 0.5
+  phylop_conserved: 2.0
+
+phenotype:
+  min_match_score_to_prioritise: 0.2   # candidates below still kept if strong molecular evidence
+  expand_to_phenotypic_series: true
+  use_hpo_ancestor_propagation: true
+
+reporting:
+  max_candidates_reported: 25
+  always_report_clinvar_pathogenic_in_panel: true
+  include_excluded_summary: true
+  rank_by: ["adversarial_survival", "acmg_class", "phenotype_match", "acmg_points"]

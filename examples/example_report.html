@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Rare Disease Candidate Report</title>
+<style>
+  :root{
+    --bg:#0f1419; --panel:#1a2129; --panel2:#222c37; --line:#2e3a47;
+    --ink:#e6edf3; --muted:#9aa7b4; --accent:#4ea1ff;
+    --path:#e5484d; --lp:#f08c00; --vus:#9aa7b4; --lb:#3aa675; --benign:#2f9e6f;
+    --pass:#3aa675; --caution:#f08c00; --fail:#e5484d;
+    --fatal:#e5484d; --major:#f08c00; --minor:#7e8a96;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.5 -apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif}
+  header{padding:20px 28px;border-bottom:1px solid var(--line);background:var(--panel);position:sticky;top:0;z-index:10}
+  h1{margin:0;font-size:20px} h2{font-size:16px;margin:0 0 8px}
+  .sub{color:var(--muted);font-size:13px;margin-top:4px}
+  .wrap{max-width:1180px;margin:0 auto;padding:24px 28px}
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;margin:14px 0}
+  .stat{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:12px}
+  .stat .n{font-size:22px;font-weight:600}
+  .stat .l{color:var(--muted);font-size:12px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:10px;margin:14px 0;overflow:hidden}
+  .card.excluded{opacity:.72}
+  .chead{display:flex;align-items:center;gap:12px;padding:14px 18px;cursor:pointer;border-bottom:1px solid var(--line)}
+  .chead:hover{background:var(--panel2)}
+  .rank{background:var(--panel2);border:1px solid var(--line);border-radius:6px;width:30px;height:30px;display:flex;align-items:center;justify-content:center;font-weight:700;color:var(--accent)}
+  .gene{font-weight:700;font-size:16px}
+  .loc{color:var(--muted);font-family:ui-monospace,Menlo,monospace;font-size:12px}
+  .spacer{flex:1}
+  .badge{padding:3px 9px;border-radius:20px;font-size:11px;font-weight:700;white-space:nowrap}
+  .b-Pathogenic{background:var(--path);color:#fff}
+  .b-Likely-pathogenic{background:var(--lp);color:#241a00}
+  .b-Uncertain-significance{background:var(--vus);color:#10151a}
+  .b-Likely-benign,.b-Benign{background:var(--lb);color:#04150d}
+  .b-pass{background:var(--pass);color:#04150d}.b-caution{background:var(--caution);color:#241a00}.b-fail{background:var(--fail);color:#fff}
+  .b-survive{background:var(--pass);color:#04150d}.b-fail-gate{background:var(--fail);color:#fff}
+  .b-strong{background:var(--accent);color:#04101e}.b-moderate{background:#5a6b7a;color:#fff}.b-weak{background:#3a4651;color:#cfd8e0}
+  .cbody{display:none;padding:6px 18px 20px}
+  .cbody.open{display:block}
+  .sec{margin-top:18px}
+  .sec h3{font-size:13px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);border-bottom:1px solid var(--line);padding-bottom:6px;margin:0 0 10px}
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  td,th{text-align:left;padding:6px 8px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{color:var(--muted);font-weight:600;width:30%}
+  .kv{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:6px 22px}
+  .kv div{display:flex;justify-content:space-between;gap:10px;border-bottom:1px dotted var(--line);padding:4px 0}
+  .kv .k{color:var(--muted)} .kv .v{font-weight:600;text-align:right}
+  .crit{display:flex;gap:10px;padding:8px 10px;border-left:3px solid var(--line);background:var(--panel2);border-radius:0 6px 6px 0;margin:6px 0}
+  .crit.path{border-color:var(--path)} .crit.benign{border-color:var(--lb)}
+  .code{font-family:ui-monospace,monospace;font-weight:700;min-width:48px}
+  .chal{padding:10px 12px;border-radius:8px;background:var(--panel2);margin:8px 0;border-left:4px solid var(--minor)}
+  .chal.fatal{border-color:var(--fatal)} .chal.major{border-color:var(--major)}
+  .chal .top{display:flex;gap:8px;align-items:center;margin-bottom:4px}
+  .tag{font-size:10px;text-transform:uppercase;letter-spacing:.04em;padding:2px 7px;border-radius:4px;background:#0c1116;border:1px solid var(--line);color:var(--muted)}
+  .status-refuted{color:var(--pass)} .status-mitigated{color:var(--caution)} .status-unrefuted{color:var(--fail);font-weight:700}
+  .igv img{max-width:100%;border:1px solid var(--line);border-radius:6px;margin-top:8px}
+  .pe{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:16px;margin:12px 0}
+  .pe .top{display:flex;gap:10px;align-items:center}
+  .pri-high{color:var(--path);font-weight:700}.pri-medium{color:var(--lp)}.pri-low{color:var(--muted)}
+  details{margin:8px 0} summary{cursor:pointer;color:var(--accent)}
+  .ref{font-family:ui-monospace,monospace;font-size:11px;color:var(--muted)}
+  .muted{color:var(--muted)} .narr{line-height:1.6}
+  ul{margin:6px 0 6px 18px;padding:0} li{margin:3px 0}
+  a{color:var(--accent)}
+  .pill-row{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+</style>
+</head>
+<body>
+<header>
+  <h1 id="title">Rare Disease Candidate Report</h1>
+  <div class="sub" id="subtitle"></div>
+</header>
+<div class="wrap" id="app"></div>
+
+<script>
+const REPORT = {"schema_version": "1.0", "case_id": "RD-2026-0142", "generated_at": "2026-05-31T09:14:00Z", "assembly": "GRCh38", "pipeline": {"name": "rare-disease-workflow", "version": "1.0", "stages_completed": ["intake", "gene_prioritization", "snv_triage", "sv_triage", "evidence", "igv_review", "acmg", "adversarial_review", "synthesis", "pending_evidence"], "tool_versions": {"bcftools": "1.18", "samtools": "1.18", "bedtools": "2.31", "igv": "2.17.4"}, "api_sources": ["ClinVar", "PubMed", "Ensembl", "UCSC", "gnomAD v4.1"]}, "patient": {"hpo_terms": [{"id": "HP:0001250", "label": "Seizure"}, {"id": "HP:0011097", "label": "Epileptic spasms"}, {"id": "HP:0001518", "label": "Small for gestational age"}, {"id": "HP:0001263", "label": "Global developmental delay"}, {"id": "HP:0002187", "label": "Intellectual disability, profound"}, {"id": "HP:0010851", "label": "EEG with burst suppression"}], "phenotype_summary": "Male infant with neonatal-onset epileptic encephalopathy: tonic seizures from day 3 of life evolving to epileptic spasms, burst-suppression on EEG, profound global developmental delay. No dysmorphism. Brain MRI reported as normal at 2 months.", "age_of_onset": "neonatal (day 3 of life); HP:0003623", "inheritance_hypotheses": ["de_novo", "autosomal_recessive", "x_linked_recessive"], "family_history": "Non-consanguineous parents, no family history of epilepsy or developmental disorders. One healthy older sister.", "consanguinity": "no", "ethnicity": "Northern European", "prior_testing": [{"test": "Chromosomal microarray (CMA)", "result": "Normal (no pathogenic CNVs >50 kb)", "date": "2025-12", "implication": "Large CNVs excluded; small intragenic events and balanced rearrangements still possible \u2014 re-examine WGS SV calls below CMA resolution."}, {"test": "Epilepsy gene panel (v3, 110 genes)", "result": "No reported pathogenic variants", "date": "2026-01", "implication": "Panel covered KCNQ2 coding exons; however v3 did not include deep-intronic or splice-region analysis and reported SNVs/indels only \u2014 CNV/SV and non-coding still open."}], "structured_facts": {"cardinal_phenotypes": ["HP:0011097", "HP:0010851"], "pertinent_negatives": ["HP:0000252 (no microcephaly)", "normal MRI"]}}, "candidate_variants": [{"candidate_id": "C001", "rank": 1, "variant_type": "SNV", "genomic": {"chrom": "chr20", "pos": 63452690, "ref": "G", "alt": "A", "hgvs_c": "NM_172107.4:c.821C>T", "hgvs_p": "p.(Ala274Val)", "vcf_id": "20_63452690_G_A", "rsid": ""}, "gene": {"symbol": "KCNQ2", "ensembl_gene_id": "ENSG00000075043", "transcript": "NM_172107.4", "mane_select": true}, "consequence": {"vep_consequence": "missense_variant", "impact": "MODERATE", "exon": "6/17", "protein_domain": "Ion transport / S5-S6 pore region"}, "zygosity": "het", "inheritance_fit": {"model": "autosomal_dominant", "compound_het_partner": null, "segregation": "de_novo_presumed", "consistent": true, "notes": "Absent in gnomAD, recurrent de novo gene for this phenotype; parental testing not yet performed.", "evidence_refs": [{"kind": "vcf_field", "value": "report.json:genotype proband 0/1"}]}, "quality": {"filter": "PASS", "depth": 42, "genotype_quality": 99, "allele_balance": 0.48, "alt_read_count": 20, "mapping_quality": 60, "strand_bias_phred": 1.2, "in_segmental_duplication": false, "in_low_complexity_or_repeat": false, "igv_assessment": {"image": "igv/C001_chr20_63452690.png", "verdict": "clean", "observations": "Alt allele supported by 20/42 reads, both strands, MAPQ60, no soft-clip enrichment; allele balance 0.48 consistent with heterozygous call."}, "qc_verdict": "pass", "qc_notes": "High-confidence call.", "evidence_refs": [{"kind": "tool_output", "value": "bcftools query DP=42;GQ=99;AD=22,20"}]}, "population_frequency": {"gnomad_version": "v4.1", "gnomad_af_global": 0.0, "gnomad_af_popmax": 0.0, "gnomad_popmax_population": "none", "gnomad_hom_count": 0, "consistent_with_disease": true, "evidence_refs": [{"kind": "api_gnomad", "value": "20-63452690-G-A absent gnomad_r4"}]}, "predictions": {"revel": 0.94, "cadd_phred": 29.4, "alphamissense": 0.981, "spliceai_max_ds": 0.02, "phylop": 7.9, "consensus": "damaging"}, "gene_constraint": {"pli": 1.0, "loeuf": 0.18, "mis_z": 4.1}, "clinvar": {"variation_id": "VCV000021769", "clinical_significance": "Pathogenic", "review_status": "criteria provided, multiple submitters, no conflicts", "star_rating": 2, "conditions": ["Developmental and epileptic encephalopathy 7"], "last_evaluated": "2024-08-11", "same_aa_different_nt": "p.Ala274 also altered by c.820_821 variants (PM5 candidate)", "evidence_ref": {"kind": "api_clinvar", "value": "VCV000021769"}}, "gene_disease": {"associated_conditions": [{"name": "Developmental and epileptic encephalopathy 7 (KCNQ2-DEE)", "omim": "613720", "mondo": "MONDO:0013312", "inheritance": "AD", "clingen_validity": "Definitive"}], "phenotype_match": {"score": 0.91, "matched_hpo": ["HP:0011097", "HP:0010851", "HP:0001250", "HP:0001263"], "missing_cardinal_features": [], "discordant_features": [], "notes": "Neonatal onset, burst-suppression and epileptic spasms are the textbook KCNQ2-DEE presentation."}}, "literature": [{"pmid": "22275249", "title": "KCNQ2 encephalopathy: emerging phenotype of a neonatal epileptic encephalopathy", "year": 2012, "relevance": "same_gene_same_phenotype", "finding": "Defines the neonatal DEE phenotype with burst-suppression; pore-region missense variants act by dominant-negative mechanism."}, {"pmid": "29655203", "title": "Functional characterization of KCNQ2 variants in neonatal epilepsy", "year": 2018, "relevance": "functional", "finding": "Pore-domain substitutions including codon 274 reduce M-current; supports loss/dominant-negative effect (basis for PS3 if assay repeated)."}], "acmg": {"applied_criteria": [{"code": "PS1", "direction": "pathogenic", "strength": "strong", "applied": true, "rationale": "Same amino-acid change (p.Ala274Val) reported Pathogenic in ClinVar via an alternate nucleotide change.", "evidence_refs": [{"kind": "api_clinvar", "value": "VCV000021769"}]}, {"code": "PM1", "direction": "pathogenic", "strength": "moderate", "applied": true, "rationale": "Located in the well-established S5-S6 pore mutational hotspot of KCNQ2, depleted of benign variation.", "evidence_refs": [{"kind": "api_pubmed", "value": "PMID:22275249"}]}, {"code": "PM2", "direction": "pathogenic", "strength": "supporting", "applied": true, "rationale": "Absent from gnomAD v4.1 (>800k alleles).", "evidence_refs": [{"kind": "api_gnomad", "value": "20-63452690-G-A absent"}]}, {"code": "PP3", "direction": "pathogenic", "strength": "moderate", "applied": true, "rationale": "REVEL 0.94, AlphaMissense 0.981, CADD 29.4 \u2014 concordant damaging at calibrated moderate strength (Pejaver 2022).", "evidence_refs": [{"kind": "tool_output", "value": "VEP CSQ REVEL=0.94;CADD=29.4"}]}, {"code": "PM6", "direction": "pathogenic", "strength": "moderate", "applied": true, "rationale": "Phenotype-consistent variant in a gene with high de novo rate; de novo status presumed pending parental testing (would upgrade to PS2).", "evidence_refs": [{"kind": "inference", "value": "no family history; recurrent de novo gene"}]}], "considered_not_applied": [{"code": "PS2", "reason": "single proband; trio not yet available \u2014 raised as PE001"}, {"code": "PS3", "reason": "no patient-specific functional data \u2014 see PE002"}], "classification": "Pathogenic", "point_score": 11, "classification_method": "ACMG/AMP 2015 + ClinGen Bayesian points (Tavtigian 2020)", "non_acmg_evidence": ["Phenotype is highly specific for KCNQ2-DEE (PP4-level specificity).", "ClinGen gene-disease validity is Definitive."]}, "evidence_summary": "De novo (presumed) pore-domain missense in KCNQ2, absent from population databases, with concordant damaging in-silico predictions and an established ClinVar pathogenic assertion for the identical amino-acid change. Phenotype is the textbook KCNQ2-DEE presentation.", "adversarial_review": {"challenges": [{"attack_surface": "technical_artifact", "challenge": "Could this be a mapping artifact from a KCNQ2 paralogue/pseudogene?", "severity": "minor", "status": "refuted", "rebuttal": "MAPQ60 across all reads, UCSC segdup track empty at locus, allele balance 0.48; no paralogous misalignment signature on IGV.", "residual_risk": "none", "evidence_refs": [{"kind": "igv_image", "value": "igv/C001_chr20_63452690.png"}, {"kind": "api_ucsc", "value": "genomicSuperDups chr20:63452690 empty"}]}, {"attack_surface": "inheritance", "challenge": "De novo status is assumed, not proven; could be inherited from an unaffected mosaic parent, weakening PM6.", "severity": "major", "status": "mitigated", "rebuttal": "Classification reaches Pathogenic even with PM6 removed (9 pts -> Likely pathogenic). Parental testing requested (PE001) to convert PM6->PS2 and exclude inherited/mosaic origin.", "residual_risk": "If maternally inherited, recurrence risk counselling changes; does not alter pathogenicity of the variant itself."}, {"attack_surface": "phenotype_mismatch", "challenge": "Normal MRI argues against some severe DEEs.", "severity": "minor", "status": "refuted", "rebuttal": "KCNQ2-DEE classically has normal or non-specific early MRI; burst-suppression + neonatal spasms are highly concordant.", "residual_risk": "none", "evidence_refs": [{"kind": "api_pubmed", "value": "PMID:22275249"}]}, {"attack_surface": "alternative_explanation", "challenge": "Was a better candidate missed elsewhere?", "severity": "minor", "status": "refuted", "rebuttal": "No other variant in the genome reaches LP/P with comparable phenotype fit; this is the singular strong candidate.", "residual_risk": "low"}], "survives_review": true, "confidence": "high", "reviewer_verdict": "Report as primary diagnosis. The only material open item is proof of de novo origin, which affects counselling more than the pathogenicity call."}, "overall_assessment": {"candidacy": "strong", "is_primary_hypothesis": true, "summary": "KCNQ2 c.821C>T p.(Ala274Val) is a Pathogenic, phenotype-concordant variant that explains this neonatal epileptic encephalopathy and was missed by the prior panel (likely a reporting/coverage gap). It is the primary diagnostic hypothesis. Confirm de novo status by parental testing for accurate recurrence-risk counselling."}}, {"candidate_id": "C002", "rank": 2, "variant_type": "indel", "genomic": {"chrom": "chr2", "pos": 165310406, "ref": "AG", "alt": "A", "hgvs_c": "NM_021007.3:c.4880del", "hgvs_p": "p.(Gly1627fs)", "vcf_id": "2_165310406_AG_A"}, "gene": {"symbol": "SCN2A", "ensembl_gene_id": "ENSG00000136531", "transcript": "NM_021007.3", "mane_select": true}, "consequence": {"vep_consequence": "frameshift_variant", "impact": "HIGH", "exon": "27/27", "loftee": "LC", "loftee_flags": "PTC in last exon (NMD escape predicted)"}, "zygosity": "het", "inheritance_fit": {"model": "autosomal_dominant", "compound_het_partner": null, "segregation": "de_novo_presumed", "consistent": true, "notes": "Single het; SCN2A is a DEE gene but the mechanism for early-onset DEE is typically gain-of-function missense, not LoF."}, "quality": {"filter": "PASS", "depth": 35, "genotype_quality": 90, "allele_balance": 0.43, "alt_read_count": 15, "mapping_quality": 60, "strand_bias_phred": 2.1, "in_low_complexity_or_repeat": false, "igv_assessment": {"image": "igv/C002_chr2_165310406.png", "verdict": "plausible", "observations": "Single-base deletion supported by 15/35 reads on both strands; not in a homopolymer run; call looks real."}, "qc_verdict": "pass"}, "population_frequency": {"gnomad_version": "v4.1", "gnomad_af_global": 0.0, "gnomad_af_popmax": 0.0, "gnomad_hom_count": 0, "consistent_with_disease": true}, "predictions": {"spliceai_max_ds": 0.0, "consensus": "uninformative"}, "gene_constraint": {"pli": 1.0, "loeuf": 0.08}, "clinvar": {"variation_id": null, "clinical_significance": "not_in_clinvar", "review_status": "n/a"}, "gene_disease": {"associated_conditions": [{"name": "Developmental and epileptic encephalopathy 11 (early onset, GoF)", "omim": "613721", "mondo": "MONDO:0013171", "inheritance": "AD", "clingen_validity": "Definitive"}, {"name": "Autism / later-onset seizures (LoF mechanism)", "omim": "", "mondo": "", "inheritance": "AD", "clingen_validity": "Definitive"}], "phenotype_match": {"score": 0.41, "matched_hpo": ["HP:0001250", "HP:0001263"], "missing_cardinal_features": ["HP:0010851 burst-suppression typical of GoF SCN2A"], "discordant_features": ["Onset timing: SCN2A LoF typically causes LATER-onset seizures/autism, not neonatal DEE"], "notes": "Genotype-mechanism-phenotype mismatch: a LoF variant predicts the later-onset SCN2A phenotype, not this patient's neonatal GoF-type presentation."}}, "literature": [{"pmid": "28379373", "title": "SCN2A gain- vs loss-of-function genotype-phenotype correlation", "year": 2017, "relevance": "same_gene_other_phenotype", "finding": "Early-onset (<3 mo) DEE is associated with gain-of-function missense; protein-truncating LoF variants associate with later seizures/autism."}], "acmg": {"applied_criteria": [{"code": "PVS1", "direction": "pathogenic", "strength": "moderate", "applied": true, "rationale": "Frameshift in a LoF-intolerant gene, but located in the last exon with predicted NMD escape -> PVS1 downgraded to Moderate per ClinGen SVI decision tree.", "evidence_refs": [{"kind": "tool_output", "value": "LOFTEE=LC last-exon"}]}, {"code": "PM2", "direction": "pathogenic", "strength": "supporting", "applied": true, "rationale": "Absent from gnomAD v4.1.", "evidence_refs": [{"kind": "api_gnomad", "value": "absent"}]}, {"code": "BP5", "direction": "benign", "strength": "supporting", "applied": true, "rationale": "An alternate, fully concordant pathogenic variant (C001 in KCNQ2) explains the phenotype; weak evidence against SCN2A causation.", "evidence_refs": [{"kind": "inference", "value": "C001 Pathogenic, phenotype-concordant"}]}], "considered_not_applied": [{"code": "PP4", "reason": "phenotype does NOT match the LoF-SCN2A presentation; deliberately withheld"}], "classification": "Uncertain significance", "point_score": 2, "classification_method": "ACMG/AMP 2015 + ClinGen Bayesian points (Tavtigian 2020)", "non_acmg_evidence": ["Mechanism mismatch (LoF vs required GoF) materially lowers prior probability of causation for THIS phenotype."]}, "evidence_summary": "Rare, real last-exon frameshift in SCN2A. However, neonatal DEE in SCN2A is a gain-of-function disease; a LoF/PTC allele predicts the later-onset autism/seizure phenotype, which this patient does not have. Retained as a VUS and as a secondary finding rather than the diagnosis.", "adversarial_review": {"challenges": [{"attack_surface": "phenotype_mismatch", "challenge": "LoF SCN2A does not cause neonatal GoF-type DEE; reporting it as causal would be a mechanism error.", "severity": "major", "status": "unrefuted", "rebuttal": "Proposer concedes; variant cannot be the primary cause of the neonatal presentation. Retained as VUS / secondary finding only.", "residual_risk": "Could be relevant to long-term autism risk; flagged for re-evaluation as phenotype evolves."}, {"attack_surface": "gene_disease_validity", "challenge": "Is the LoF mechanism even disease-relevant here?", "severity": "minor", "status": "mitigated", "rebuttal": "SCN2A LoF is disease-relevant but for a different, later-onset phenotype; not applicable to current cardinal features.", "residual_risk": "low"}], "survives_review": true, "confidence": "low", "reviewer_verdict": "Do not report as the diagnosis. Report as a secondary VUS with explicit mechanism caveat; re-evaluate if an autism/later-seizure phenotype emerges."}, "overall_assessment": {"candidacy": "weak", "is_primary_hypothesis": false, "summary": "Genuine rare SCN2A frameshift but mechanistically mismatched to the patient's neonatal GoF-type presentation. Kept as a low-confidence VUS / secondary finding, not the diagnosis."}}], "pending_evidence": [{"id": "PE001", "related_candidates": ["C001"], "category": "segregation", "question": "Are both parents wild-type for KCNQ2 c.821C>T (i.e. is the variant de novo)?", "rationale": "Confirming de novo origin upgrades PM6 to PS2 and, more importantly, establishes accurate recurrence-risk counselling (de novo ~1% recurrence via gonadal mosaicism vs 50% if a parent is mosaic/affected).", "priority": "high", "expected_impact": {"acmg_criteria_affected": ["PM6", "PS2"], "could_change_classification_from": "Pathogenic", "to": "Pathogenic (strengthened; counselling-defining)", "decisiveness": "confirmatory"}}, {"id": "PE002", "related_candidates": ["C001"], "category": "functional_experiment", "question": "Does the p.Ala274Val substitution reduce KCNQ2/Kv7.2 M-current in a heterologous system?", "rationale": "A patient/variant-specific electrophysiology result would supply PS3 and remove any residual doubt about the functional consequence of this specific substitution.", "priority": "medium", "expected_impact": {"acmg_criteria_affected": ["PS3"], "could_change_classification_from": "Pathogenic", "to": "Pathogenic (functionally confirmed)", "decisiveness": "supportive"}, "experimental_plan": {"method": "Whole-cell patch-clamp electrophysiology of KCNQ2 variant in CHO/Xenopus expression system", "objective": "Quantify the effect of p.Ala274Val on Kv7.2 (M-type) potassium current amplitude and voltage dependence, including a dominant-negative test by co-expression with wild-type.", "hypothesis": "p.Ala274Val reduces M-current density relative to wild-type; co-expression with WT (mimicking the heterozygous state) yields current below the 50% expected for simple haploinsufficiency, indicating a dominant-negative effect.", "protocol_outline": ["Site-directed mutagenesis to introduce c.821C>T into a validated KCNQ2 cDNA construct; Sanger-confirm.", "Transfect CHO cells with (a) WT KCNQ2, (b) mutant alone, (c) WT+mutant 1:1, each co-transfected with KCNQ3, plus GFP marker.", "48 h post-transfection, whole-cell patch-clamp; voltage step protocol -80 to +40 mV.", "Measure current density (pA/pF), V50 of activation, and activation/deactivation kinetics; n>=10 cells/condition across >=3 transfections.", "Analyse blinded to genotype."], "sample_requirements": "No patient sample required (heterologous system); requires validated KCNQ2/KCNQ3 constructs.", "controls": ["WT KCNQ2+KCNQ3 (positive/normal current)", "untransfected / GFP-only (negative)", "a known pathogenic dominant-negative KCNQ2 variant (assay sensitivity control)", "a known benign KCNQ2 variant (specificity control)"], "readout": "M-current density (pA/pF) and biophysical parameters per condition.", "interpretation_framework": "PS3 supported if mutant-alone current is <50% of WT AND the WT+mutant condition is significantly below WT (p<0.05) with effect size comparable to the positive dominant-negative control. A current indistinguishable from WT would be evidence AGAINST pathogenicity (potential BS3).", "limitations": ["Heterologous system may not capture neuronal context or auxiliary subunits.", "Does not establish in vivo causation, only molecular effect.", "Construct/expression artefacts can confound \u2014 mitigated by parallel benign/pathogenic controls."], "estimated_turnaround": "6-10 weeks"}, "plan_review": {"critiques": [{"issue": "Without a known dominant-negative positive control, a 'reduced current' result is hard to calibrate against the assay's dynamic range.", "severity": "major", "resolution": "Positive dominant-negative control already specified in controls; require it to pass before interpreting the test variant."}, {"issue": "M-current is KCNQ2/KCNQ3 heteromeric; testing KCNQ2 alone would under-represent physiology.", "severity": "minor", "resolution": "Protocol co-expresses KCNQ3 in all conditions."}, {"issue": "Result is supportive (PS3) but not decisive given C001 is already Pathogenic on existing evidence \u2014 weigh cost/turnaround against clinical value.", "severity": "minor", "resolution": "Down-prioritised to medium; PE001 (segregation) is the higher-value action."}], "feasibility": "high", "verdict": "recommended_with_changes"}}, {"id": "PE003", "related_candidates": ["C001"], "category": "reanalysis", "question": "Why did the v3 epilepsy panel not report KCNQ2 c.821C>T despite covering the gene?", "rationale": "Clarifying whether this was a coverage gap, a filtering threshold, or a classification difference informs lab QA and confirms the WGS finding is not a false positive unique to this pipeline.", "priority": "medium", "expected_impact": {"acmg_criteria_affected": [], "could_change_classification_from": "Pathogenic", "to": "Pathogenic (orthogonally confirmed)", "decisiveness": "supportive"}}], "excluded_variants_summary": [{"locus": "chr1:11796321 C>T", "gene": "MTHFR", "stage_excluded": "frequency", "reason": "gnomAD AF 0.31 (BA1) \u2014 common polymorphism, not disease-causing.", "evidence_ref": "api_gnomad rs1801133"}, {"locus": "chr7:117559593 G>A", "gene": "CFTR", "stage_excluded": "phenotype_mismatch", "reason": "Pathogenic for cystic fibrosis but no phenotypic overlap with neonatal epileptic encephalopathy; incidental carrier finding.", "evidence_ref": "gene_disease phenotype score 0.02"}, {"locus": "chr15:42680000-42690000 DEL", "gene": "(intergenic)", "stage_excluded": "adversarial_review", "reason": "10 kb deletion call failed IGV review: both breakpoints in segmental duplication, supported by soft-clipped reads only, no discordant pairs \u2014 technical artifact (unrefuted fatal challenge).", "evidence_ref": "igv C_SV breakpoint in segdup"}], "run_summary": {"headline": "A Pathogenic de novo (presumed) KCNQ2 pore-domain variant explains this neonatal epileptic encephalopathy and was missed by the prior gene panel. One secondary VUS (SCN2A) is retained with a mechanism caveat.", "n_variants_in": 4812334, "n_after_qc": 4120556, "n_after_frequency": 1184, "n_candidates_reported": 2, "top_candidate_id": "C001", "diagnostic_conclusion": "likely_solved"}};
+
+const esc = s => (s==null?"":String(s)).replace(/[&<>]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[c]));
+const cls = s => esc(s).replace(/\s+/g,"-");
+const el = (h)=>{const t=document.createElement("template");t.innerHTML=h.trim();return t.content.firstChild;};
+
+function refLink(r){
+  if(!r) return "";
+  const v = esc(r.value||r);
+  const kind = r.kind||"";
+  let href = null;
+  if(kind==="api_pubmed"||/^PMID:/.test(v)) href="https://pubmed.ncbi.nlm.nih.gov/"+v.replace("PMID:","");
+  else if(kind==="api_clinvar") href="https://www.ncbi.nlm.nih.gov/clinvar/variation/"+v.replace(/^VCV/,"");
+  return `<span class="ref">${href?`[<a href="${href}" target="_blank">${v}</a>]`:`[${v}]`}</span>`;
+}
+function refs(arr){ return (arr||[]).map(refLink).join(" "); }
+
+function kv(obj, keys){
+  const rows = keys.filter(([k])=>obj && obj[k]!=null && obj[k]!=="").map(([k,label])=>
+    `<div><span class="k">${esc(label)}</span><span class="v">${esc(obj[k])}</span></div>`);
+  return rows.length? `<div class="kv">${rows.join("")}</div>` : `<div class="muted">No data.</div>`;
+}
+
+function header(){
+  const r=REPORT, rs=r.run_summary||{};
+  document.getElementById("subtitle").textContent =
+    `Case ${r.case_id} · ${r.assembly||""} · generated ${r.generated_at||""} · ${(r.pipeline&&r.pipeline.version)||""}`;
+  const stats=[
+    ["Candidates reported",(r.candidate_variants||[]).length],
+    ["Diagnostic conclusion",(rs.diagnostic_conclusion||"-").replace(/_/g," ")],
+    ["Variants screened",rs.n_variants_in??"-"],
+    ["After QC",rs.n_after_qc??"-"],
+    ["Pending evidence",(r.pending_evidence||[]).length],
+    ["Excluded (audited)",(r.excluded_variants_summary||[]).length],
+  ];
+  const app=document.getElementById("app");
+  if(rs.headline) app.appendChild(el(`<div class="card"><div style="padding:14px 18px" class="narr">${esc(rs.headline)}</div></div>`));
+  app.appendChild(el(`<div class="grid">${stats.map(([l,n])=>
+    `<div class="stat"><div class="n">${esc(n)}</div><div class="l">${esc(l)}</div></div>`).join("")}</div>`));
+}
+
+function patientPanel(){
+  const p=REPORT.patient||{};
+  const hpo=(p.hpo_terms||[]).map(t=>`<span class="tag">${esc(t.id)}${t.label?" "+esc(t.label):""}</span>`).join(" ");
+  const prior=(p.prior_testing||[]).map(t=>`<li><b>${esc(t.test)}</b>: ${esc(t.result)} <span class="muted">${esc(t.implication||"")}</span></li>`).join("");
+  const c=el(`<div class="card"><div class="chead" onclick="this.nextElementSibling.classList.toggle('open')">
+      <span class="gene">Patient & phenotype</span><span class="spacer"></span>
+      <span class="muted">${(p.hpo_terms||[]).length} HPO terms</span></div>
+    <div class="cbody open">
+      <div class="sec"><h3>Summary</h3><div class="narr">${esc(p.phenotype_summary||"")}</div></div>
+      <div class="sec"><h3>HPO terms</h3><div class="pill-row">${hpo}</div></div>
+      <div class="sec"><h3>Clinical context</h3>${kv(p,[["age_of_onset","Age of onset"],["consanguinity","Consanguinity"],["ethnicity","Ancestry"],["family_history","Family history"]])}
+        <div style="margin-top:8px"><span class="k muted">Inheritance hypotheses: </span>${(p.inheritance_hypotheses||[]).map(esc).join(", ")}</div></div>
+      ${prior?`<div class="sec"><h3>Prior testing</h3><ul>${prior}</ul></div>`:""}
+    </div></div>`);
+  document.getElementById("app").appendChild(c);
+}
+
+function acmgSection(a){
+  if(!a) return "";
+  const crit=(a.applied_criteria||[]).filter(c=>c.applied!==false).map(c=>
+    `<div class="crit ${c.direction==="benign"?"benign":"path"}">
+       <span class="code">${esc(c.code)}</span>
+       <div><b>${esc(c.strength)}</b> · ${esc(c.direction)}<br>
+       <span class="narr">${esc(c.rationale)}</span> ${refs(c.evidence_refs)}</div></div>`).join("");
+  const non=(a.non_acmg_evidence||[]).map(e=>`<li>${esc(e)}</li>`).join("");
+  return `<div class="sec"><h3>ACMG-aligned classification —
+      <span class="badge b-${cls(a.classification)}">${esc(a.classification)}</span>
+      <span class="muted">(${a.point_score} pts · ${esc(a.classification_method||"")})</span></h3>
+    ${crit||'<div class="muted">No criteria applied.</div>'}
+    ${non?`<details><summary>Supporting evidence beyond formal ACMG codes</summary><ul>${non}</ul></details>`:""}</div>`;
+}
+
+function advSection(ar){
+  if(!ar) return "";
+  const chals=(ar.challenges||[]).map(c=>
+    `<div class="chal ${esc(c.severity)}">
+       <div class="top"><span class="tag">${esc((c.attack_surface||"").replace(/_/g," "))}</span>
+         <span class="tag">${esc(c.severity)}</span>
+         <span class="status-${esc(c.status)}">${esc(c.status)}</span></div>
+       <div class="narr">${esc(c.challenge)}</div>
+       ${c.rebuttal?`<div class="narr"><b>Rebuttal:</b> ${esc(c.rebuttal)} ${refs(c.evidence_refs)}</div>`:""}
+       ${c.residual_risk?`<div class="muted">Residual risk: ${esc(c.residual_risk)}</div>`:""}
+     </div>`).join("");
+  return `<div class="sec"><h3>Adversarial review —
+      <span class="badge ${ar.survives_review?"b-survive":"b-fail-gate"}">${ar.survives_review?"SURVIVES":"FAILS GATE"}</span>
+      <span class="muted">confidence: ${esc(ar.confidence)}</span></h3>
+    <div class="narr" style="margin-bottom:8px">${esc(ar.reviewer_verdict||"")}</div>${chals}</div>`;
+}
+
+function igvSection(q){
+  const ig=q&&q.igv_assessment; if(!ig||!ig.image) return "";
+  const extra=(ig.extra_images||[]).map(i=>`<img src="${esc(i)}" alt="igv">`).join("");
+  return `<div class="sec igv"><h3>IGV visual review —
+      <span class="badge b-${cls(ig.verdict==="clean"?"pass":ig.verdict==="artifact_suspected"?"fail":"caution")}">${esc(ig.verdict||"")}</span></h3>
+    <div class="narr">${esc(ig.observations||"")}</div>
+    <img src="${esc(ig.image)}" alt="igv">${extra}</div>`;
+}
+
+function candidateCard(c,i,excluded){
+  const g=c.genomic||{}, gene=c.gene||{}, a=c.acmg||{}, ar=c.adversarial_review||{};
+  const loc = g.pos!=null ? `${esc(g.chrom)}:${esc(g.pos)} ${esc(g.ref)}>${esc(g.alt)}`
+                          : `${esc(g.chrom)}:${esc(g.start)}-${esc(g.end)} ${esc(g.sv_type||"")}`;
+  const oa=c.overall_assessment||{};
+  const lit=(c.literature||[]).map(l=>`<li>${refLink({kind:"api_pubmed",value:"PMID:"+l.pmid})}
+     <b>${esc(l.title)}</b> <span class="muted">(${esc(l.relevance)})</span> — ${esc(l.finding)}</li>`).join("");
+  const gd=(c.gene_disease&&c.gene_disease.associated_conditions||[]).map(x=>
+     `<li>${esc(x.name)} <span class="muted">${esc(x.omim||"")} · ${esc(x.inheritance||"")} · validity: ${esc(x.clingen_validity||"")}</span></li>`).join("");
+  const pm=c.gene_disease&&c.gene_disease.phenotype_match;
+  const card=el(`<div class="card ${excluded?"excluded":""}">
+    <div class="chead" onclick="this.nextElementSibling.classList.toggle('open')">
+      <span class="rank">${excluded?"✕":(c.rank||i+1)}</span>
+      <div><div class="gene">${esc(gene.symbol||"?")} <span class="muted" style="font-weight:400">${esc(c.variant_type||"")}</span></div>
+        <div class="loc">${loc} ${esc(g.hgvs_c||"")} ${esc(g.hgvs_p||"")}</div></div>
+      <span class="spacer"></span>
+      ${oa.candidacy?`<span class="badge b-${esc(oa.candidacy)}">${esc(oa.candidacy)}</span>`:""}
+      <span class="badge ${ar.survives_review===false?"b-fail-gate":"b-survive"}">${ar.survives_review===false?"excluded":"reviewed"}</span>
+      <span class="badge b-${cls(a.classification||"Uncertain significance")}">${esc(a.classification||"VUS")}</span>
+    </div>
+    <div class="cbody">
+      ${oa.summary?`<div class="sec"><h3>Assessment</h3><div class="narr">${esc(oa.summary)}</div></div>`:""}
+      <div class="sec"><h3>Variant</h3>
+        ${kv({...g,...gene,zyg:c.zygosity,cons:(c.consequence||{}).vep_consequence,impact:(c.consequence||{}).impact},
+          [["transcript","Transcript"],["mane_select","MANE"],["cons","Consequence"],["impact","Impact"],
+           ["zyg","Zygosity"],["hgvs_c","HGVS c."],["hgvs_p","HGVS p."],["rsid","dbSNP"]])}</div>
+      <div class="sec"><h3>Quality</h3>${qcKV(c.quality)}</div>
+      <div class="sec"><h3>Population & predictors</h3>${freqKV(c)}</div>
+      ${c.clinvar?`<div class="sec"><h3>ClinVar</h3>${kv(c.clinvar,[["variation_id","Accession"],["clinical_significance","Significance"],["review_status","Review"],["star_rating","Stars"],["last_evaluated","Last evaluated"]])}</div>`:""}
+      ${gd?`<div class="sec"><h3>Gene–disease</h3><ul>${gd}</ul>${pm?`<div class="muted">Phenotype match: ${pm.score??"-"} · matched ${(pm.matched_hpo||[]).length} HPO · missing cardinal: ${(pm.missing_cardinal_features||[]).join(", ")||"none"}</div>`:""}</div>`:""}
+      ${acmgSection(a)}
+      ${igvSection(c.quality)}
+      ${lit?`<div class="sec"><h3>Literature</h3><ul>${lit}</ul></div>`:""}
+      ${advSection(ar)}
+    </div></div>`);
+  return card;
+}
+
+function qcKV(q){
+  if(!q) return '<div class="muted">No QC.</div>';
+  const ig=q.igv_assessment||{};
+  const v=`<span class="badge b-${esc(q.qc_verdict||"caution")}">${esc(q.qc_verdict||"?")}</span>`;
+  return `<div style="margin-bottom:6px">QC verdict: ${v} ${q.qc_notes?'<span class="muted">'+esc(q.qc_notes)+'</span>':''}</div>`+
+    kv(q,[["filter","FILTER"],["depth","Depth"],["genotype_quality","GQ"],["allele_balance","Allele balance"],
+      ["alt_read_count","Alt reads"],["mapping_quality","MAPQ"],["strand_bias_phred","Strand bias"],
+      ["in_segmental_duplication","In segdup"],["in_low_complexity_or_repeat","Repeat/LCR"],["sv_caller_support","SV support"]]);
+}
+function freqKV(c){
+  const f=c.population_frequency||{}, p=c.predictions||{}, gc=c.gene_constraint||{};
+  return kv({...f,...p,...gc},[["gnomad_af_global","gnomAD AF"],["gnomad_af_popmax","gnomAD popmax"],
+    ["gnomad_popmax_population","popmax pop"],["gnomad_hom_count","Homozygotes"],["gnomad_hemi_count","Hemizygotes"],
+    ["consistent_with_disease","AF consistent w/ disease"],
+    ["revel","REVEL"],["cadd_phred","CADD"],["alphamissense","AlphaMissense"],["spliceai_max_ds","SpliceAI"],
+    ["phylop","phyloP"],["pli","pLI"],["loeuf","LOEUF"]]);
+}
+
+function pendingPanel(){
+  const list=REPORT.pending_evidence||[]; if(!list.length) return;
+  const app=document.getElementById("app");
+  app.appendChild(el(`<h2 style="margin:28px 0 4px">Pending evidence (${list.length})</h2>
+    <div class="sub">Specific questions / experiments that could materially change a classification.</div>`));
+  list.forEach(pe=>{
+    const ei=pe.expected_impact||{};
+    const plan=pe.experimental_plan, pr=pe.plan_review;
+    const planHtml = plan? `<details open><summary>Experimental plan — ${esc(plan.method)}</summary>
+        ${kv(plan,[["objective","Objective"],["hypothesis","Hypothesis"],["sample_requirements","Samples"],["readout","Readout"],["estimated_turnaround","Turnaround"]])}
+        ${plan.protocol_outline?`<div class="muted" style="margin-top:6px">Protocol:</div><ol>${plan.protocol_outline.map(s=>`<li>${esc(s)}</li>`).join("")}</ol>`:""}
+        ${plan.controls?`<div class="muted">Controls: ${plan.controls.map(esc).join(", ")}</div>`:""}
+        ${plan.interpretation_framework?`<div class="narr"><b>Interpretation:</b> ${esc(plan.interpretation_framework)}</div>`:""}
+        ${plan.limitations?`<div class="muted">Limitations: ${plan.limitations.map(esc).join("; ")}</div>`:""}
+      </details>`:"";
+    const prHtml = pr? `<details><summary>Critical review of the plan — verdict: <b>${esc(pr.verdict)}</b> (feasibility ${esc(pr.feasibility)})</summary>
+        ${(pr.critiques||[]).map(c=>`<div class="chal ${esc(c.severity)}"><b>${esc(c.severity)}:</b> ${esc(c.issue)}<br><span class="muted">→ ${esc(c.resolution)}</span></div>`).join("")}
+      </details>`:"";
+    app.appendChild(el(`<div class="pe">
+      <div class="top"><span class="pri-${esc(pe.priority||"low")}">${esc((pe.priority||"").toUpperCase())}</span>
+        <span class="tag">${esc((pe.category||"").replace(/_/g," "))}</span>
+        <b>${esc(pe.id)}</b> <span class="muted">→ ${(pe.related_candidates||[]).map(esc).join(", ")}</span></div>
+      <div class="narr" style="margin:8px 0"><b>${esc(pe.question)}</b></div>
+      <div class="narr">${esc(pe.rationale)}</div>
+      <div class="muted" style="margin-top:6px">Could change ${esc(ei.could_change_classification_from||"-")} → ${esc(ei.to||"-")}
+        · affects ${(ei.acmg_criteria_affected||[]).map(esc).join(", ")||"-"} · ${esc(ei.decisiveness||"")}</div>
+      ${planHtml}${prHtml}</div>`));
+  });
+}
+
+function excludedPanel(){
+  const ex=REPORT.excluded_variants_summary||[]; if(!ex.length) return;
+  const app=document.getElementById("app");
+  const rows=ex.map(e=>`<tr><td>${esc(e.gene||"")}</td><td class="loc">${esc(e.locus||"")}</td><td>${esc(e.stage_excluded||"")}</td><td>${esc(e.reason||"")}</td></tr>`).join("");
+  app.appendChild(el(`<details style="margin-top:24px"><summary><b>Excluded variants (${ex.length}) — audit trail</b></summary>
+    <div class="card"><table><tr><th>Gene</th><th>Locus</th><th>Stage</th><th>Reason</th></tr>${rows}</table></div></details>`));
+}
+
+function main(){
+  if(!REPORT){document.getElementById("app").innerHTML="<p class='muted'>No report data embedded.</p>";return;}
+  header(); patientPanel();
+  document.getElementById("app").appendChild(el(`<h2 style="margin:24px 0 4px">Candidate variants (${(REPORT.candidate_variants||[]).length})</h2>`));
+  (REPORT.candidate_variants||[]).forEach((c,i)=>document.getElementById("app").appendChild(candidateCard(c,i,false)));
+  pendingPanel(); excludedPanel();
+}
+main();
+</script>
+</body>
+</html>

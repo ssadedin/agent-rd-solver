@@ -1,0 +1,432 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.org/rare-disease-workflow/candidate_report.schema.json",
+  "title": "Undiagnosed Rare Disease Candidate Report",
+  "type": "object",
+  "required": ["schema_version", "case_id", "generated_at", "patient", "candidate_variants", "pending_evidence"],
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": { "type": "string", "const": "1.0" },
+    "case_id": { "type": "string" },
+    "generated_at": { "type": "string", "format": "date-time" },
+    "assembly": { "type": "string", "enum": ["GRCh38", "GRCh37"] },
+    "pipeline": {
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "version": { "type": "string" },
+        "stages_completed": { "type": "array", "items": { "type": "string" } },
+        "tool_versions": { "type": "object", "additionalProperties": { "type": "string" } },
+        "api_sources": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+
+    "patient": {
+      "type": "object",
+      "required": ["hpo_terms"],
+      "properties": {
+        "hpo_terms": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["id"],
+            "properties": {
+              "id": { "type": "string", "pattern": "^HP:[0-9]{7}$" },
+              "label": { "type": "string" }
+            }
+          }
+        },
+        "phenotype_summary": { "type": "string" },
+        "age_of_onset": { "type": "string", "description": "Free text or HPO onset term; e.g. 'neonatal', 'HP:0003623'" },
+        "inheritance_hypotheses": {
+          "type": "array",
+          "items": { "type": "string", "enum": ["de_novo", "autosomal_dominant", "autosomal_recessive", "x_linked_recessive", "x_linked_dominant", "mitochondrial", "imprinting", "unknown"] }
+        },
+        "family_history": { "type": "string" },
+        "consanguinity": { "type": "string", "enum": ["yes", "no", "unknown"] },
+        "ethnicity": { "type": "string" },
+        "prior_testing": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "test": { "type": "string" },
+              "result": { "type": "string" },
+              "date": { "type": "string" },
+              "implication": { "type": "string", "description": "what this rules in/out for the current analysis" }
+            }
+          }
+        },
+        "structured_facts": {
+          "type": "object",
+          "description": "Machine-extracted clinical facts, each with provenance back to clinical_notes.txt",
+          "additionalProperties": true
+        }
+      }
+    },
+
+    "candidate_variants": { "type": "array", "items": { "$ref": "#/$defs/candidate" } },
+    "pending_evidence": { "type": "array", "items": { "$ref": "#/$defs/pending_evidence" } },
+
+    "excluded_variants_summary": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "locus": { "type": "string" },
+          "gene": { "type": "string" },
+          "stage_excluded": { "type": "string" },
+          "reason": { "type": "string" },
+          "evidence_ref": { "type": "string" }
+        }
+      }
+    },
+
+    "run_summary": {
+      "type": "object",
+      "properties": {
+        "headline": { "type": "string" },
+        "n_variants_in": { "type": "integer" },
+        "n_after_qc": { "type": "integer" },
+        "n_after_frequency": { "type": "integer" },
+        "n_candidates_reported": { "type": "integer" },
+        "top_candidate_id": { "type": ["string", "null"] },
+        "diagnostic_conclusion": { "type": "string", "enum": ["likely_solved", "promising_candidates", "candidates_pending_evidence", "uninformative"] }
+      }
+    },
+
+    "audit": {
+      "type": "object",
+      "description": "Provenance index; full artefacts on disk under audit/",
+      "additionalProperties": true
+    }
+  },
+
+  "$defs": {
+
+    "evidence_ref": {
+      "type": "object",
+      "description": "Pointer to a verifiable source for a factual claim (anti-hallucination).",
+      "required": ["kind", "value"],
+      "properties": {
+        "kind": { "type": "string", "enum": ["tool_output", "api_clinvar", "api_pubmed", "api_ensembl", "api_ucsc", "api_gnomad", "vcf_field", "igv_image", "clinical_note", "reference_db", "inference"] },
+        "value": { "type": "string", "description": "accession / file:line / field name / PMID / URL" },
+        "retrieved_at": { "type": "string", "format": "date-time" }
+      }
+    },
+
+    "candidate": {
+      "type": "object",
+      "required": ["candidate_id", "variant_type", "gene", "acmg", "adversarial_review", "overall_assessment"],
+      "additionalProperties": false,
+      "properties": {
+        "candidate_id": { "type": "string", "pattern": "^C[0-9]{3}$" },
+        "rank": { "type": "integer", "minimum": 1 },
+        "variant_type": { "type": "string", "enum": ["SNV", "indel", "MNV", "CNV", "SV"] },
+
+        "genomic": {
+          "type": "object",
+          "properties": {
+            "chrom": { "type": "string" },
+            "pos": { "type": "integer" },
+            "ref": { "type": "string" },
+            "alt": { "type": "string" },
+            "start": { "type": "integer" },
+            "end": { "type": "integer" },
+            "sv_type": { "type": "string", "enum": ["DEL", "DUP", "INS", "INV", "BND", "CNV_GAIN", "CNV_LOSS"] },
+            "copy_number": { "type": ["number", "null"] },
+            "hgvs_g": { "type": "string" },
+            "hgvs_c": { "type": "string" },
+            "hgvs_p": { "type": "string" },
+            "vcf_id": { "type": "string" },
+            "rsid": { "type": "string" }
+          }
+        },
+
+        "gene": {
+          "type": "object",
+          "required": ["symbol"],
+          "properties": {
+            "symbol": { "type": "string" },
+            "ensembl_gene_id": { "type": "string" },
+            "transcript": { "type": "string" },
+            "mane_select": { "type": "boolean" },
+            "genes_affected": { "type": "array", "items": { "type": "string" }, "description": "for multi-gene SV/CNV" }
+          }
+        },
+
+        "consequence": {
+          "type": "object",
+          "properties": {
+            "vep_consequence": { "type": "string" },
+            "impact": { "type": "string", "enum": ["HIGH", "MODERATE", "LOW", "MODIFIER"] },
+            "exon": { "type": "string" },
+            "protein_domain": { "type": "string" },
+            "loftee": { "type": "string", "enum": ["HC", "LC", "NA"] },
+            "loftee_flags": { "type": "string" }
+          }
+        },
+
+        "zygosity": { "type": "string", "enum": ["het", "hom", "hemi", "unknown"] },
+
+        "inheritance_fit": {
+          "type": "object",
+          "properties": {
+            "model": { "type": "string" },
+            "compound_het_partner": { "type": ["string", "null"] },
+            "segregation": { "type": "string", "enum": ["observed_consistent", "observed_inconsistent", "inferred_consistent", "not_assessed", "de_novo_confirmed", "de_novo_presumed"] },
+            "consistent": { "type": "boolean" },
+            "notes": { "type": "string" },
+            "evidence_refs": { "type": "array", "items": { "$ref": "#/$defs/evidence_ref" } }
+          }
+        },
+
+        "quality": {
+          "type": "object",
+          "properties": {
+            "filter": { "type": "string" },
+            "depth": { "type": ["integer", "null"] },
+            "genotype_quality": { "type": ["integer", "null"] },
+            "allele_balance": { "type": ["number", "null"] },
+            "alt_read_count": { "type": ["integer", "null"] },
+            "mapping_quality": { "type": ["number", "null"] },
+            "strand_bias_phred": { "type": ["number", "null"] },
+            "in_segmental_duplication": { "type": ["boolean", "null"] },
+            "in_low_complexity_or_repeat": { "type": ["boolean", "null"] },
+            "homopolymer_context": { "type": ["boolean", "null"] },
+            "sv_caller_support": { "type": "string", "description": "PR/SR support, breakpoint precision, # callers" },
+            "igv_assessment": {
+              "type": "object",
+              "properties": {
+                "image": { "type": "string", "description": "relative path to PNG" },
+                "verdict": { "type": "string", "enum": ["clean", "plausible", "artifact_suspected", "uninterpretable"] },
+                "observations": { "type": "string" }
+              }
+            },
+            "qc_verdict": { "type": "string", "enum": ["pass", "caution", "fail"] },
+            "qc_notes": { "type": "string" },
+            "evidence_refs": { "type": "array", "items": { "$ref": "#/$defs/evidence_ref" } }
+          }
+        },
+
+        "population_frequency": {
+          "type": "object",
+          "properties": {
+            "gnomad_version": { "type": "string" },
+            "gnomad_af_global": { "type": ["number", "null"] },
+            "gnomad_af_popmax": { "type": ["number", "null"] },
+            "gnomad_popmax_population": { "type": "string" },
+            "gnomad_hom_count": { "type": ["integer", "null"] },
+            "gnomad_hemi_count": { "type": ["integer", "null"] },
+            "internal_cohort_count": { "type": ["integer", "null"] },
+            "max_credible_af_for_disease": { "type": ["number", "null"], "description": "computed from prevalence/penetrance/het freq" },
+            "consistent_with_disease": { "type": "boolean" },
+            "evidence_refs": { "type": "array", "items": { "$ref": "#/$defs/evidence_ref" } }
+          }
+        },
+
+        "predictions": {
+          "type": "object",
+          "properties": {
+            "revel": { "type": ["number", "null"] },
+            "cadd_phred": { "type": ["number", "null"] },
+            "alphamissense": { "type": ["number", "null"] },
+            "spliceai_max_ds": { "type": ["number", "null"] },
+            "spliceai_detail": { "type": "string" },
+            "phylop": { "type": ["number", "null"] },
+            "gerp": { "type": ["number", "null"] },
+            "consensus": { "type": "string", "enum": ["damaging", "tolerated", "conflicting", "uninformative"] }
+          }
+        },
+
+        "gene_constraint": {
+          "type": "object",
+          "properties": {
+            "pli": { "type": ["number", "null"] },
+            "loeuf": { "type": ["number", "null"] },
+            "mis_z": { "type": ["number", "null"] }
+          }
+        },
+
+        "clinvar": {
+          "type": "object",
+          "properties": {
+            "variation_id": { "type": ["string", "null"] },
+            "clinical_significance": { "type": "string" },
+            "review_status": { "type": "string" },
+            "star_rating": { "type": ["integer", "null"] },
+            "conditions": { "type": "array", "items": { "type": "string" } },
+            "last_evaluated": { "type": "string" },
+            "same_aa_different_nt": { "type": "string", "description": "for PS1/PM5 reasoning" },
+            "evidence_ref": { "$ref": "#/$defs/evidence_ref" }
+          }
+        },
+
+        "gene_disease": {
+          "type": "object",
+          "properties": {
+            "associated_conditions": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "name": { "type": "string" },
+                  "omim": { "type": "string" },
+                  "mondo": { "type": "string" },
+                  "inheritance": { "type": "string" },
+                  "clingen_validity": { "type": "string", "enum": ["Definitive", "Strong", "Moderate", "Limited", "Disputed", "Refuted", "No Known", "Not Classified"] }
+                }
+              }
+            },
+            "phenotype_match": {
+              "type": "object",
+              "properties": {
+                "score": { "type": ["number", "null"], "description": "0-1 semantic similarity (e.g. Phenodigm/Resnik)" },
+                "matched_hpo": { "type": "array", "items": { "type": "string" } },
+                "missing_cardinal_features": { "type": "array", "items": { "type": "string" } },
+                "discordant_features": { "type": "array", "items": { "type": "string" } },
+                "notes": { "type": "string" }
+              }
+            }
+          }
+        },
+
+        "literature": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "pmid": { "type": "string" },
+              "title": { "type": "string" },
+              "year": { "type": ["integer", "null"] },
+              "relevance": { "type": "string", "enum": ["same_variant", "same_gene_same_phenotype", "same_gene_other_phenotype", "functional", "background"] },
+              "finding": { "type": "string" }
+            }
+          }
+        },
+
+        "acmg": {
+          "type": "object",
+          "required": ["applied_criteria", "classification"],
+          "properties": {
+            "applied_criteria": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": ["code", "direction", "strength", "rationale"],
+                "properties": {
+                  "code": { "type": "string", "description": "PVS1, PS1-4, PM1-6, PP1-5, BA1, BS1-4, BP1-7" },
+                  "direction": { "type": "string", "enum": ["pathogenic", "benign"] },
+                  "strength": { "type": "string", "enum": ["very_strong", "strong", "moderate", "supporting", "stand_alone"] },
+                  "applied": { "type": "boolean" },
+                  "rationale": { "type": "string" },
+                  "evidence_refs": { "type": "array", "items": { "$ref": "#/$defs/evidence_ref" } }
+                }
+              }
+            },
+            "classification": { "type": "string", "enum": ["Pathogenic", "Likely pathogenic", "Uncertain significance", "Likely benign", "Benign"] },
+            "point_score": { "type": "integer", "description": "ClinGen Bayesian point system net score" },
+            "classification_method": { "type": "string" },
+            "non_acmg_evidence": { "type": "array", "items": { "type": "string" }, "description": "supporting evidence outside formal ACMG codes" }
+          }
+        },
+
+        "evidence_summary": { "type": "string" },
+
+        "adversarial_review": {
+          "type": "object",
+          "required": ["challenges", "survives_review", "confidence"],
+          "properties": {
+            "challenges": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": ["attack_surface", "challenge", "severity", "status"],
+                "properties": {
+                  "attack_surface": { "type": "string", "enum": ["technical_artifact", "mapping_ambiguity", "frequency", "inheritance", "phenotype_mismatch", "gene_disease_validity", "clinvar_conflict", "in_silico_weakness", "alternative_explanation"] },
+                  "challenge": { "type": "string" },
+                  "severity": { "type": "string", "enum": ["fatal", "major", "minor"] },
+                  "status": { "type": "string", "enum": ["refuted", "mitigated", "unrefuted"] },
+                  "rebuttal": { "type": "string" },
+                  "residual_risk": { "type": "string" },
+                  "evidence_refs": { "type": "array", "items": { "$ref": "#/$defs/evidence_ref" } }
+                }
+              }
+            },
+            "survives_review": { "type": "boolean" },
+            "confidence": { "type": "string", "enum": ["high", "moderate", "low"] },
+            "reviewer_verdict": { "type": "string" }
+          }
+        },
+
+        "overall_assessment": {
+          "type": "object",
+          "required": ["candidacy"],
+          "properties": {
+            "candidacy": { "type": "string", "enum": ["strong", "moderate", "weak"] },
+            "is_primary_hypothesis": { "type": "boolean" },
+            "summary": { "type": "string" }
+          }
+        }
+      }
+    },
+
+    "pending_evidence": {
+      "type": "object",
+      "required": ["id", "category", "question", "rationale", "expected_impact"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "type": "string", "pattern": "^PE[0-9]{3}$" },
+        "related_candidates": { "type": "array", "items": { "type": "string" } },
+        "category": { "type": "string", "enum": ["clinical_data", "segregation", "functional_experiment", "imaging", "additional_sequencing", "reanalysis", "phenotyping"] },
+        "question": { "type": "string" },
+        "rationale": { "type": "string" },
+        "priority": { "type": "string", "enum": ["high", "medium", "low"] },
+        "expected_impact": {
+          "type": "object",
+          "properties": {
+            "acmg_criteria_affected": { "type": "array", "items": { "type": "string" } },
+            "could_change_classification_from": { "type": "string" },
+            "to": { "type": "string" },
+            "decisiveness": { "type": "string", "enum": ["confirmatory", "highly_informative", "supportive"] }
+          }
+        },
+        "experimental_plan": {
+          "type": "object",
+          "description": "Required when category == functional_experiment",
+          "properties": {
+            "method": { "type": "string" },
+            "objective": { "type": "string" },
+            "hypothesis": { "type": "string" },
+            "protocol_outline": { "type": "array", "items": { "type": "string" } },
+            "sample_requirements": { "type": "string" },
+            "controls": { "type": "array", "items": { "type": "string" } },
+            "readout": { "type": "string" },
+            "interpretation_framework": { "type": "string", "description": "exactly which result supports/refutes which hypothesis" },
+            "limitations": { "type": "array", "items": { "type": "string" } },
+            "estimated_turnaround": { "type": "string" }
+          }
+        },
+        "plan_review": {
+          "type": "object",
+          "description": "Adversarial critique of the proposed plan itself",
+          "properties": {
+            "critiques": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "issue": { "type": "string" },
+                  "severity": { "type": "string", "enum": ["fatal", "major", "minor"] },
+                  "resolution": { "type": "string" }
+                }
+              }
+            },
+            "feasibility": { "type": "string", "enum": ["high", "medium", "low"] },
+            "verdict": { "type": "string", "enum": ["recommended", "recommended_with_changes", "not_recommended"] }
+          }
+        }
+      }
+    }
+  }
+}

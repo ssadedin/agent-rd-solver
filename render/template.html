@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Rare Disease Candidate Report</title>
+<style>
+  :root{
+    --bg:#0f1419; --panel:#1a2129; --panel2:#222c37; --line:#2e3a47;
+    --ink:#e6edf3; --muted:#9aa7b4; --accent:#4ea1ff;
+    --path:#e5484d; --lp:#f08c00; --vus:#9aa7b4; --lb:#3aa675; --benign:#2f9e6f;
+    --pass:#3aa675; --caution:#f08c00; --fail:#e5484d;
+    --fatal:#e5484d; --major:#f08c00; --minor:#7e8a96;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.5 -apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif}
+  header{padding:20px 28px;border-bottom:1px solid var(--line);background:var(--panel);position:sticky;top:0;z-index:10}
+  h1{margin:0;font-size:20px} h2{font-size:16px;margin:0 0 8px}
+  .sub{color:var(--muted);font-size:13px;margin-top:4px}
+  .wrap{max-width:1180px;margin:0 auto;padding:24px 28px}
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;margin:14px 0}
+  .stat{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:12px}
+  .stat .n{font-size:22px;font-weight:600}
+  .stat .l{color:var(--muted);font-size:12px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:10px;margin:14px 0;overflow:hidden}
+  .card.excluded{opacity:.72}
+  .chead{display:flex;align-items:center;gap:12px;padding:14px 18px;cursor:pointer;border-bottom:1px solid var(--line)}
+  .chead:hover{background:var(--panel2)}
+  .rank{background:var(--panel2);border:1px solid var(--line);border-radius:6px;width:30px;height:30px;display:flex;align-items:center;justify-content:center;font-weight:700;color:var(--accent)}
+  .gene{font-weight:700;font-size:16px}
+  .loc{color:var(--muted);font-family:ui-monospace,Menlo,monospace;font-size:12px}
+  .spacer{flex:1}
+  .badge{padding:3px 9px;border-radius:20px;font-size:11px;font-weight:700;white-space:nowrap}
+  .b-Pathogenic{background:var(--path);color:#fff}
+  .b-Likely-pathogenic{background:var(--lp);color:#241a00}
+  .b-Uncertain-significance{background:var(--vus);color:#10151a}
+  .b-Likely-benign,.b-Benign{background:var(--lb);color:#04150d}
+  .b-pass{background:var(--pass);color:#04150d}.b-caution{background:var(--caution);color:#241a00}.b-fail{background:var(--fail);color:#fff}
+  .b-survive{background:var(--pass);color:#04150d}.b-fail-gate{background:var(--fail);color:#fff}
+  .b-strong{background:var(--accent);color:#04101e}.b-moderate{background:#5a6b7a;color:#fff}.b-weak{background:#3a4651;color:#cfd8e0}
+  .cbody{display:none;padding:6px 18px 20px}
+  .cbody.open{display:block}
+  .sec{margin-top:18px}
+  .sec h3{font-size:13px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);border-bottom:1px solid var(--line);padding-bottom:6px;margin:0 0 10px}
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  td,th{text-align:left;padding:6px 8px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{color:var(--muted);font-weight:600;width:30%}
+  .kv{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:6px 22px}
+  .kv div{display:flex;justify-content:space-between;gap:10px;border-bottom:1px dotted var(--line);padding:4px 0}
+  .kv .k{color:var(--muted)} .kv .v{font-weight:600;text-align:right}
+  .crit{display:flex;gap:10px;padding:8px 10px;border-left:3px solid var(--line);background:var(--panel2);border-radius:0 6px 6px 0;margin:6px 0}
+  .crit.path{border-color:var(--path)} .crit.benign{border-color:var(--lb)}
+  .code{font-family:ui-monospace,monospace;font-weight:700;min-width:48px}
+  .chal{padding:10px 12px;border-radius:8px;background:var(--panel2);margin:8px 0;border-left:4px solid var(--minor)}
+  .chal.fatal{border-color:var(--fatal)} .chal.major{border-color:var(--major)}
+  .chal .top{display:flex;gap:8px;align-items:center;margin-bottom:4px}
+  .tag{font-size:10px;text-transform:uppercase;letter-spacing:.04em;padding:2px 7px;border-radius:4px;background:#0c1116;border:1px solid var(--line);color:var(--muted)}
+  .status-refuted{color:var(--pass)} .status-mitigated{color:var(--caution)} .status-unrefuted{color:var(--fail);font-weight:700}
+  .igv img{max-width:100%;border:1px solid var(--line);border-radius:6px;margin-top:8px}
+  .pe{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:16px;margin:12px 0}
+  .pe .top{display:flex;gap:10px;align-items:center}
+  .pri-high{color:var(--path);font-weight:700}.pri-medium{color:var(--lp)}.pri-low{color:var(--muted)}
+  details{margin:8px 0} summary{cursor:pointer;color:var(--accent)}
+  .ref{font-family:ui-monospace,monospace;font-size:11px;color:var(--muted)}
+  .muted{color:var(--muted)} .narr{line-height:1.6}
+  ul{margin:6px 0 6px 18px;padding:0} li{margin:3px 0}
+  a{color:var(--accent)}
+  .pill-row{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+</style>
+</head>
+<body>
+<header>
+  <h1 id="title">Rare Disease Candidate Report</h1>
+  <div class="sub" id="subtitle"></div>
+</header>
+<div class="wrap" id="app"></div>
+
+<script>
+const REPORT = /*__REPORT_JSON__*/null;
+
+const esc = s => (s==null?"":String(s)).replace(/[&<>]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[c]));
+const cls = s => esc(s).replace(/\s+/g,"-");
+const el = (h)=>{const t=document.createElement("template");t.innerHTML=h.trim();return t.content.firstChild;};
+
+function refLink(r){
+  if(!r) return "";
+  const v = esc(r.value||r);
+  const kind = r.kind||"";
+  let href = null;
+  if(kind==="api_pubmed"||/^PMID:/.test(v)) href="https://pubmed.ncbi.nlm.nih.gov/"+v.replace("PMID:","");
+  else if(kind==="api_clinvar") href="https://www.ncbi.nlm.nih.gov/clinvar/variation/"+v.replace(/^VCV/,"");
+  return `<span class="ref">${href?`[<a href="${href}" target="_blank">${v}</a>]`:`[${v}]`}</span>`;
+}
+function refs(arr){ return (arr||[]).map(refLink).join(" "); }
+
+function kv(obj, keys){
+  const rows = keys.filter(([k])=>obj && obj[k]!=null && obj[k]!=="").map(([k,label])=>
+    `<div><span class="k">${esc(label)}</span><span class="v">${esc(obj[k])}</span></div>`);
+  return rows.length? `<div class="kv">${rows.join("")}</div>` : `<div class="muted">No data.</div>`;
+}
+
+function header(){
+  const r=REPORT, rs=r.run_summary||{};
+  document.getElementById("subtitle").textContent =
+    `Case ${r.case_id} · ${r.assembly||""} · generated ${r.generated_at||""} · ${(r.pipeline&&r.pipeline.version)||""}`;
+  const stats=[
+    ["Candidates reported",(r.candidate_variants||[]).length],
+    ["Diagnostic conclusion",(rs.diagnostic_conclusion||"-").replace(/_/g," ")],
+    ["Variants screened",rs.n_variants_in??"-"],
+    ["After QC",rs.n_after_qc??"-"],
+    ["Pending evidence",(r.pending_evidence||[]).length],
+    ["Excluded (audited)",(r.excluded_variants_summary||[]).length],
+  ];
+  const app=document.getElementById("app");
+  if(rs.headline) app.appendChild(el(`<div class="card"><div style="padding:14px 18px" class="narr">${esc(rs.headline)}</div></div>`));
+  app.appendChild(el(`<div class="grid">${stats.map(([l,n])=>
+    `<div class="stat"><div class="n">${esc(n)}</div><div class="l">${esc(l)}</div></div>`).join("")}</div>`));
+}
+
+function patientPanel(){
+  const p=REPORT.patient||{};
+  const hpo=(p.hpo_terms||[]).map(t=>`<span class="tag">${esc(t.id)}${t.label?" "+esc(t.label):""}</span>`).join(" ");
+  const prior=(p.prior_testing||[]).map(t=>`<li><b>${esc(t.test)}</b>: ${esc(t.result)} <span class="muted">${esc(t.implication||"")}</span></li>`).join("");
+  const c=el(`<div class="card"><div class="chead" onclick="this.nextElementSibling.classList.toggle('open')">
+      <span class="gene">Patient & phenotype</span><span class="spacer"></span>
+      <span class="muted">${(p.hpo_terms||[]).length} HPO terms</span></div>
+    <div class="cbody open">
+      <div class="sec"><h3>Summary</h3><div class="narr">${esc(p.phenotype_summary||"")}</div></div>
+      <div class="sec"><h3>HPO terms</h3><div class="pill-row">${hpo}</div></div>
+      <div class="sec"><h3>Clinical context</h3>${kv(p,[["age_of_onset","Age of onset"],["consanguinity","Consanguinity"],["ethnicity","Ancestry"],["family_history","Family history"]])}
+        <div style="margin-top:8px"><span class="k muted">Inheritance hypotheses: </span>${(p.inheritance_hypotheses||[]).map(esc).join(", ")}</div></div>
+      ${prior?`<div class="sec"><h3>Prior testing</h3><ul>${prior}</ul></div>`:""}
+    </div></div>`);
+  document.getElementById("app").appendChild(c);
+}
+
+function acmgSection(a){
+  if(!a) return "";
+  const crit=(a.applied_criteria||[]).filter(c=>c.applied!==false).map(c=>
+    `<div class="crit ${c.direction==="benign"?"benign":"path"}">
+       <span class="code">${esc(c.code)}</span>
+       <div><b>${esc(c.strength)}</b> · ${esc(c.direction)}<br>
+       <span class="narr">${esc(c.rationale)}</span> ${refs(c.evidence_refs)}</div></div>`).join("");
+  const non=(a.non_acmg_evidence||[]).map(e=>`<li>${esc(e)}</li>`).join("");
+  return `<div class="sec"><h3>ACMG-aligned classification —
+      <span class="badge b-${cls(a.classification)}">${esc(a.classification)}</span>
+      <span class="muted">(${a.point_score} pts · ${esc(a.classification_method||"")})</span></h3>
+    ${crit||'<div class="muted">No criteria applied.</div>'}
+    ${non?`<details><summary>Supporting evidence beyond formal ACMG codes</summary><ul>${non}</ul></details>`:""}</div>`;
+}
+
+function advSection(ar){
+  if(!ar) return "";
+  const chals=(ar.challenges||[]).map(c=>
+    `<div class="chal ${esc(c.severity)}">
+       <div class="top"><span class="tag">${esc((c.attack_surface||"").replace(/_/g," "))}</span>
+         <span class="tag">${esc(c.severity)}</span>
+         <span class="status-${esc(c.status)}">${esc(c.status)}</span></div>
+       <div class="narr">${esc(c.challenge)}</div>
+       ${c.rebuttal?`<div class="narr"><b>Rebuttal:</b> ${esc(c.rebuttal)} ${refs(c.evidence_refs)}</div>`:""}
+       ${c.residual_risk?`<div class="muted">Residual risk: ${esc(c.residual_risk)}</div>`:""}
+     </div>`).join("");
+  return `<div class="sec"><h3>Adversarial review —
+      <span class="badge ${ar.survives_review?"b-survive":"b-fail-gate"}">${ar.survives_review?"SURVIVES":"FAILS GATE"}</span>
+      <span class="muted">confidence: ${esc(ar.confidence)}</span></h3>
+    <div class="narr" style="margin-bottom:8px">${esc(ar.reviewer_verdict||"")}</div>${chals}</div>`;
+}
+
+function igvSection(q){
+  const ig=q&&q.igv_assessment; if(!ig||!ig.image) return "";
+  const extra=(ig.extra_images||[]).map(i=>`<img src="${esc(i)}" alt="igv">`).join("");
+  return `<div class="sec igv"><h3>IGV visual review —
+      <span class="badge b-${cls(ig.verdict==="clean"?"pass":ig.verdict==="artifact_suspected"?"fail":"caution")}">${esc(ig.verdict||"")}</span></h3>
+    <div class="narr">${esc(ig.observations||"")}</div>
+    <img src="${esc(ig.image)}" alt="igv">${extra}</div>`;
+}
+
+function candidateCard(c,i,excluded){
+  const g=c.genomic||{}, gene=c.gene||{}, a=c.acmg||{}, ar=c.adversarial_review||{};
+  const loc = g.pos!=null ? `${esc(g.chrom)}:${esc(g.pos)} ${esc(g.ref)}>${esc(g.alt)}`
+                          : `${esc(g.chrom)}:${esc(g.start)}-${esc(g.end)} ${esc(g.sv_type||"")}`;
+  const oa=c.overall_assessment||{};
+  const lit=(c.literature||[]).map(l=>`<li>${refLink({kind:"api_pubmed",value:"PMID:"+l.pmid})}
+     <b>${esc(l.title)}</b> <span class="muted">(${esc(l.relevance)})</span> — ${esc(l.finding)}</li>`).join("");
+  const gd=(c.gene_disease&&c.gene_disease.associated_conditions||[]).map(x=>
+     `<li>${esc(x.name)} <span class="muted">${esc(x.omim||"")} · ${esc(x.inheritance||"")} · validity: ${esc(x.clingen_validity||"")}</span></li>`).join("");
+  const pm=c.gene_disease&&c.gene_disease.phenotype_match;
+  const card=el(`<div class="card ${excluded?"excluded":""}">
+    <div class="chead" onclick="this.nextElementSibling.classList.toggle('open')">
+      <span class="rank">${excluded?"✕":(c.rank||i+1)}</span>
+      <div><div class="gene">${esc(gene.symbol||"?")} <span class="muted" style="font-weight:400">${esc(c.variant_type||"")}</span></div>
+        <div class="loc">${loc} ${esc(g.hgvs_c||"")} ${esc(g.hgvs_p||"")}</div></div>
+      <span class="spacer"></span>
+      ${oa.candidacy?`<span class="badge b-${esc(oa.candidacy)}">${esc(oa.candidacy)}</span>`:""}
+      <span class="badge ${ar.survives_review===false?"b-fail-gate":"b-survive"}">${ar.survives_review===false?"excluded":"reviewed"}</span>
+      <span class="badge b-${cls(a.classification||"Uncertain significance")}">${esc(a.classification||"VUS")}</span>
+    </div>
+    <div class="cbody">
+      ${oa.summary?`<div class="sec"><h3>Assessment</h3><div class="narr">${esc(oa.summary)}</div></div>`:""}
+      <div class="sec"><h3>Variant</h3>
+        ${kv({...g,...gene,zyg:c.zygosity,cons:(c.consequence||{}).vep_consequence,impact:(c.consequence||{}).impact},
+          [["transcript","Transcript"],["mane_select","MANE"],["cons","Consequence"],["impact","Impact"],
+           ["zyg","Zygosity"],["hgvs_c","HGVS c."],["hgvs_p","HGVS p."],["rsid","dbSNP"]])}</div>
+      <div class="sec"><h3>Quality</h3>${qcKV(c.quality)}</div>
+      <div class="sec"><h3>Population & predictors</h3>${freqKV(c)}</div>
+      ${c.clinvar?`<div class="sec"><h3>ClinVar</h3>${kv(c.clinvar,[["variation_id","Accession"],["clinical_significance","Significance"],["review_status","Review"],["star_rating","Stars"],["last_evaluated","Last evaluated"]])}</div>`:""}
+      ${gd?`<div class="sec"><h3>Gene–disease</h3><ul>${gd}</ul>${pm?`<div class="muted">Phenotype match: ${pm.score??"-"} · matched ${(pm.matched_hpo||[]).length} HPO · missing cardinal: ${(pm.missing_cardinal_features||[]).join(", ")||"none"}</div>`:""}</div>`:""}
+      ${acmgSection(a)}
+      ${igvSection(c.quality)}
+      ${lit?`<div class="sec"><h3>Literature</h3><ul>${lit}</ul></div>`:""}
+      ${advSection(ar)}
+    </div></div>`);
+  return card;
+}
+
+function qcKV(q){
+  if(!q) return '<div class="muted">No QC.</div>';
+  const ig=q.igv_assessment||{};
+  const v=`<span class="badge b-${esc(q.qc_verdict||"caution")}">${esc(q.qc_verdict||"?")}</span>`;
+  return `<div style="margin-bottom:6px">QC verdict: ${v} ${q.qc_notes?'<span class="muted">'+esc(q.qc_notes)+'</span>':''}</div>`+
+    kv(q,[["filter","FILTER"],["depth","Depth"],["genotype_quality","GQ"],["allele_balance","Allele balance"],
+      ["alt_read_count","Alt reads"],["mapping_quality","MAPQ"],["strand_bias_phred","Strand bias"],
+      ["in_segmental_duplication","In segdup"],["in_low_complexity_or_repeat","Repeat/LCR"],["sv_caller_support","SV support"]]);
+}
+function freqKV(c){
+  const f=c.population_frequency||{}, p=c.predictions||{}, gc=c.gene_constraint||{};
+  return kv({...f,...p,...gc},[["gnomad_af_global","gnomAD AF"],["gnomad_af_popmax","gnomAD popmax"],
+    ["gnomad_popmax_population","popmax pop"],["gnomad_hom_count","Homozygotes"],["gnomad_hemi_count","Hemizygotes"],
+    ["consistent_with_disease","AF consistent w/ disease"],
+    ["revel","REVEL"],["cadd_phred","CADD"],["alphamissense","AlphaMissense"],["spliceai_max_ds","SpliceAI"],
+    ["phylop","phyloP"],["pli","pLI"],["loeuf","LOEUF"]]);
+}
+
+function pendingPanel(){
+  const list=REPORT.pending_evidence||[]; if(!list.length) return;
+  const app=document.getElementById("app");
+  app.appendChild(el(`<h2 style="margin:28px 0 4px">Pending evidence (${list.length})</h2>
+    <div class="sub">Specific questions / experiments that could materially change a classification.</div>`));
+  list.forEach(pe=>{
+    const ei=pe.expected_impact||{};
+    const plan=pe.experimental_plan, pr=pe.plan_review;
+    const planHtml = plan? `<details open><summary>Experimental plan — ${esc(plan.method)}</summary>
+        ${kv(plan,[["objective","Objective"],["hypothesis","Hypothesis"],["sample_requirements","Samples"],["readout","Readout"],["estimated_turnaround","Turnaround"]])}
+        ${plan.protocol_outline?`<div class="muted" style="margin-top:6px">Protocol:</div><ol>${plan.protocol_outline.map(s=>`<li>${esc(s)}</li>`).join("")}</ol>`:""}
+        ${plan.controls?`<div class="muted">Controls: ${plan.controls.map(esc).join(", ")}</div>`:""}
+        ${plan.interpretation_framework?`<div class="narr"><b>Interpretation:</b> ${esc(plan.interpretation_framework)}</div>`:""}
+        ${plan.limitations?`<div class="muted">Limitations: ${plan.limitations.map(esc).join("; ")}</div>`:""}
+      </details>`:"";
+    const prHtml = pr? `<details><summary>Critical review of the plan — verdict: <b>${esc(pr.verdict)}</b> (feasibility ${esc(pr.feasibility)})</summary>
+        ${(pr.critiques||[]).map(c=>`<div class="chal ${esc(c.severity)}"><b>${esc(c.severity)}:</b> ${esc(c.issue)}<br><span class="muted">→ ${esc(c.resolution)}</span></div>`).join("")}
+      </details>`:"";
+    app.appendChild(el(`<div class="pe">
+      <div class="top"><span class="pri-${esc(pe.priority||"low")}">${esc((pe.priority||"").toUpperCase())}</span>
+        <span class="tag">${esc((pe.category||"").replace(/_/g," "))}</span>
+        <b>${esc(pe.id)}</b> <span class="muted">→ ${(pe.related_candidates||[]).map(esc).join(", ")}</span></div>
+      <div class="narr" style="margin:8px 0"><b>${esc(pe.question)}</b></div>
+      <div class="narr">${esc(pe.rationale)}</div>
+      <div class="muted" style="margin-top:6px">Could change ${esc(ei.could_change_classification_from||"-")} → ${esc(ei.to||"-")}
+        · affects ${(ei.acmg_criteria_affected||[]).map(esc).join(", ")||"-"} · ${esc(ei.decisiveness||"")}</div>
+      ${planHtml}${prHtml}</div>`));
+  });
+}
+
+function excludedPanel(){
+  const ex=REPORT.excluded_variants_summary||[]; if(!ex.length) return;
+  const app=document.getElementById("app");
+  const rows=ex.map(e=>`<tr><td>${esc(e.gene||"")}</td><td class="loc">${esc(e.locus||"")}</td><td>${esc(e.stage_excluded||"")}</td><td>${esc(e.reason||"")}</td></tr>`).join("");
+  app.appendChild(el(`<details style="margin-top:24px"><summary><b>Excluded variants (${ex.length}) — audit trail</b></summary>
+    <div class="card"><table><tr><th>Gene</th><th>Locus</th><th>Stage</th><th>Reason</th></tr>${rows}</table></div></details>`));
+}
+
+function main(){
+  if(!REPORT){document.getElementById("app").innerHTML="<p class='muted'>No report data embedded.</p>";return;}
+  header(); patientPanel();
+  document.getElementById("app").appendChild(el(`<h2 style="margin:24px 0 4px">Candidate variants (${(REPORT.candidate_variants||[]).length})</h2>`));
+  (REPORT.candidate_variants||[]).forEach((c,i)=>document.getElementById("app").appendChild(candidateCard(c,i,false)));
+  pendingPanel(); excludedPanel();
+}
+main();
+</script>
+</body>
+</html>

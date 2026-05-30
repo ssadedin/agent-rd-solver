@@ -1,0 +1,211 @@
+{
+  "schema_version": "1.0",
+  "case_id": "RD-2026-0142",
+  "generated_at": "2026-05-31T09:14:00Z",
+  "assembly": "GRCh38",
+  "pipeline": {
+    "name": "rare-disease-workflow",
+    "version": "1.0",
+    "stages_completed": ["intake", "gene_prioritization", "snv_triage", "sv_triage", "evidence", "igv_review", "acmg", "adversarial_review", "synthesis", "pending_evidence"],
+    "tool_versions": {"bcftools": "1.18", "samtools": "1.18", "bedtools": "2.31", "igv": "2.17.4"},
+    "api_sources": ["ClinVar", "PubMed", "Ensembl", "UCSC", "gnomAD v4.1"]
+  },
+  "patient": {
+    "hpo_terms": [
+      {"id": "HP:0001250", "label": "Seizure"},
+      {"id": "HP:0011097", "label": "Epileptic spasms"},
+      {"id": "HP:0001518", "label": "Small for gestational age"},
+      {"id": "HP:0001263", "label": "Global developmental delay"},
+      {"id": "HP:0002187", "label": "Intellectual disability, profound"},
+      {"id": "HP:0010851", "label": "EEG with burst suppression"}
+    ],
+    "phenotype_summary": "Male infant with neonatal-onset epileptic encephalopathy: tonic seizures from day 3 of life evolving to epileptic spasms, burst-suppression on EEG, profound global developmental delay. No dysmorphism. Brain MRI reported as normal at 2 months.",
+    "age_of_onset": "neonatal (day 3 of life); HP:0003623",
+    "inheritance_hypotheses": ["de_novo", "autosomal_recessive", "x_linked_recessive"],
+    "family_history": "Non-consanguineous parents, no family history of epilepsy or developmental disorders. One healthy older sister.",
+    "consanguinity": "no",
+    "ethnicity": "Northern European",
+    "prior_testing": [
+      {"test": "Chromosomal microarray (CMA)", "result": "Normal (no pathogenic CNVs >50 kb)", "date": "2025-12", "implication": "Large CNVs excluded; small intragenic events and balanced rearrangements still possible — re-examine WGS SV calls below CMA resolution."},
+      {"test": "Epilepsy gene panel (v3, 110 genes)", "result": "No reported pathogenic variants", "date": "2026-01", "implication": "Panel covered KCNQ2 coding exons; however v3 did not include deep-intronic or splice-region analysis and reported SNVs/indels only — CNV/SV and non-coding still open."}
+    ],
+    "structured_facts": {
+      "cardinal_phenotypes": ["HP:0011097", "HP:0010851"],
+      "pertinent_negatives": ["HP:0000252 (no microcephaly)", "normal MRI"]
+    }
+  },
+  "candidate_variants": [
+    {
+      "candidate_id": "C001",
+      "rank": 1,
+      "variant_type": "SNV",
+      "genomic": {"chrom": "chr20", "pos": 63452690, "ref": "G", "alt": "A", "hgvs_c": "NM_172107.4:c.821C>T", "hgvs_p": "p.(Ala274Val)", "vcf_id": "20_63452690_G_A", "rsid": ""},
+      "gene": {"symbol": "KCNQ2", "ensembl_gene_id": "ENSG00000075043", "transcript": "NM_172107.4", "mane_select": true},
+      "consequence": {"vep_consequence": "missense_variant", "impact": "MODERATE", "exon": "6/17", "protein_domain": "Ion transport / S5-S6 pore region"},
+      "zygosity": "het",
+      "inheritance_fit": {"model": "autosomal_dominant", "compound_het_partner": null, "segregation": "de_novo_presumed", "consistent": true, "notes": "Absent in gnomAD, recurrent de novo gene for this phenotype; parental testing not yet performed.", "evidence_refs": [{"kind": "vcf_field", "value": "report.json:genotype proband 0/1"}]},
+      "quality": {
+        "filter": "PASS", "depth": 42, "genotype_quality": 99, "allele_balance": 0.48, "alt_read_count": 20,
+        "mapping_quality": 60, "strand_bias_phred": 1.2, "in_segmental_duplication": false, "in_low_complexity_or_repeat": false,
+        "igv_assessment": {"image": "igv/C001_chr20_63452690.png", "verdict": "clean", "observations": "Alt allele supported by 20/42 reads, both strands, MAPQ60, no soft-clip enrichment; allele balance 0.48 consistent with heterozygous call."},
+        "qc_verdict": "pass", "qc_notes": "High-confidence call.",
+        "evidence_refs": [{"kind": "tool_output", "value": "bcftools query DP=42;GQ=99;AD=22,20"}]
+      },
+      "population_frequency": {"gnomad_version": "v4.1", "gnomad_af_global": 0.0, "gnomad_af_popmax": 0.0, "gnomad_popmax_population": "none", "gnomad_hom_count": 0, "consistent_with_disease": true, "evidence_refs": [{"kind": "api_gnomad", "value": "20-63452690-G-A absent gnomad_r4"}]},
+      "predictions": {"revel": 0.94, "cadd_phred": 29.4, "alphamissense": 0.981, "spliceai_max_ds": 0.02, "phylop": 7.9, "consensus": "damaging"},
+      "gene_constraint": {"pli": 1.0, "loeuf": 0.18, "mis_z": 4.1},
+      "clinvar": {"variation_id": "VCV000021769", "clinical_significance": "Pathogenic", "review_status": "criteria provided, multiple submitters, no conflicts", "star_rating": 2, "conditions": ["Developmental and epileptic encephalopathy 7"], "last_evaluated": "2024-08-11", "same_aa_different_nt": "p.Ala274 also altered by c.820_821 variants (PM5 candidate)", "evidence_ref": {"kind": "api_clinvar", "value": "VCV000021769"}},
+      "gene_disease": {
+        "associated_conditions": [{"name": "Developmental and epileptic encephalopathy 7 (KCNQ2-DEE)", "omim": "613720", "mondo": "MONDO:0013312", "inheritance": "AD", "clingen_validity": "Definitive"}],
+        "phenotype_match": {"score": 0.91, "matched_hpo": ["HP:0011097", "HP:0010851", "HP:0001250", "HP:0001263"], "missing_cardinal_features": [], "discordant_features": [], "notes": "Neonatal onset, burst-suppression and epileptic spasms are the textbook KCNQ2-DEE presentation."}
+      },
+      "literature": [
+        {"pmid": "22275249", "title": "KCNQ2 encephalopathy: emerging phenotype of a neonatal epileptic encephalopathy", "year": 2012, "relevance": "same_gene_same_phenotype", "finding": "Defines the neonatal DEE phenotype with burst-suppression; pore-region missense variants act by dominant-negative mechanism."},
+        {"pmid": "29655203", "title": "Functional characterization of KCNQ2 variants in neonatal epilepsy", "year": 2018, "relevance": "functional", "finding": "Pore-domain substitutions including codon 274 reduce M-current; supports loss/dominant-negative effect (basis for PS3 if assay repeated)."}
+      ],
+      "acmg": {
+        "applied_criteria": [
+          {"code": "PS1", "direction": "pathogenic", "strength": "strong", "applied": true, "rationale": "Same amino-acid change (p.Ala274Val) reported Pathogenic in ClinVar via an alternate nucleotide change.", "evidence_refs": [{"kind": "api_clinvar", "value": "VCV000021769"}]},
+          {"code": "PM1", "direction": "pathogenic", "strength": "moderate", "applied": true, "rationale": "Located in the well-established S5-S6 pore mutational hotspot of KCNQ2, depleted of benign variation.", "evidence_refs": [{"kind": "api_pubmed", "value": "PMID:22275249"}]},
+          {"code": "PM2", "direction": "pathogenic", "strength": "supporting", "applied": true, "rationale": "Absent from gnomAD v4.1 (>800k alleles).", "evidence_refs": [{"kind": "api_gnomad", "value": "20-63452690-G-A absent"}]},
+          {"code": "PP3", "direction": "pathogenic", "strength": "moderate", "applied": true, "rationale": "REVEL 0.94, AlphaMissense 0.981, CADD 29.4 — concordant damaging at calibrated moderate strength (Pejaver 2022).", "evidence_refs": [{"kind": "tool_output", "value": "VEP CSQ REVEL=0.94;CADD=29.4"}]},
+          {"code": "PM6", "direction": "pathogenic", "strength": "moderate", "applied": true, "rationale": "Phenotype-consistent variant in a gene with high de novo rate; de novo status presumed pending parental testing (would upgrade to PS2).", "evidence_refs": [{"kind": "inference", "value": "no family history; recurrent de novo gene"}]}
+        ],
+        "considered_not_applied": [{"code": "PS2", "reason": "single proband; trio not yet available — raised as PE001"}, {"code": "PS3", "reason": "no patient-specific functional data — see PE002"}],
+        "classification": "Pathogenic",
+        "point_score": 11,
+        "classification_method": "ACMG/AMP 2015 + ClinGen Bayesian points (Tavtigian 2020)",
+        "non_acmg_evidence": ["Phenotype is highly specific for KCNQ2-DEE (PP4-level specificity).", "ClinGen gene-disease validity is Definitive."]
+      },
+      "evidence_summary": "De novo (presumed) pore-domain missense in KCNQ2, absent from population databases, with concordant damaging in-silico predictions and an established ClinVar pathogenic assertion for the identical amino-acid change. Phenotype is the textbook KCNQ2-DEE presentation.",
+      "adversarial_review": {
+        "challenges": [
+          {"attack_surface": "technical_artifact", "challenge": "Could this be a mapping artifact from a KCNQ2 paralogue/pseudogene?", "severity": "minor", "status": "refuted", "rebuttal": "MAPQ60 across all reads, UCSC segdup track empty at locus, allele balance 0.48; no paralogous misalignment signature on IGV.", "residual_risk": "none", "evidence_refs": [{"kind": "igv_image", "value": "igv/C001_chr20_63452690.png"}, {"kind": "api_ucsc", "value": "genomicSuperDups chr20:63452690 empty"}]},
+          {"attack_surface": "inheritance", "challenge": "De novo status is assumed, not proven; could be inherited from an unaffected mosaic parent, weakening PM6.", "severity": "major", "status": "mitigated", "rebuttal": "Classification reaches Pathogenic even with PM6 removed (9 pts -> Likely pathogenic). Parental testing requested (PE001) to convert PM6->PS2 and exclude inherited/mosaic origin.", "residual_risk": "If maternally inherited, recurrence risk counselling changes; does not alter pathogenicity of the variant itself."},
+          {"attack_surface": "phenotype_mismatch", "challenge": "Normal MRI argues against some severe DEEs.", "severity": "minor", "status": "refuted", "rebuttal": "KCNQ2-DEE classically has normal or non-specific early MRI; burst-suppression + neonatal spasms are highly concordant.", "residual_risk": "none", "evidence_refs": [{"kind": "api_pubmed", "value": "PMID:22275249"}]},
+          {"attack_surface": "alternative_explanation", "challenge": "Was a better candidate missed elsewhere?", "severity": "minor", "status": "refuted", "rebuttal": "No other variant in the genome reaches LP/P with comparable phenotype fit; this is the singular strong candidate.", "residual_risk": "low"}
+        ],
+        "survives_review": true,
+        "confidence": "high",
+        "reviewer_verdict": "Report as primary diagnosis. The only material open item is proof of de novo origin, which affects counselling more than the pathogenicity call."
+      },
+      "overall_assessment": {"candidacy": "strong", "is_primary_hypothesis": true, "summary": "KCNQ2 c.821C>T p.(Ala274Val) is a Pathogenic, phenotype-concordant variant that explains this neonatal epileptic encephalopathy and was missed by the prior panel (likely a reporting/coverage gap). It is the primary diagnostic hypothesis. Confirm de novo status by parental testing for accurate recurrence-risk counselling."}
+    },
+    {
+      "candidate_id": "C002",
+      "rank": 2,
+      "variant_type": "indel",
+      "genomic": {"chrom": "chr2", "pos": 165310406, "ref": "AG", "alt": "A", "hgvs_c": "NM_021007.3:c.4880del", "hgvs_p": "p.(Gly1627fs)", "vcf_id": "2_165310406_AG_A"},
+      "gene": {"symbol": "SCN2A", "ensembl_gene_id": "ENSG00000136531", "transcript": "NM_021007.3", "mane_select": true},
+      "consequence": {"vep_consequence": "frameshift_variant", "impact": "HIGH", "exon": "27/27", "loftee": "LC", "loftee_flags": "PTC in last exon (NMD escape predicted)"},
+      "zygosity": "het",
+      "inheritance_fit": {"model": "autosomal_dominant", "compound_het_partner": null, "segregation": "de_novo_presumed", "consistent": true, "notes": "Single het; SCN2A is a DEE gene but the mechanism for early-onset DEE is typically gain-of-function missense, not LoF."},
+      "quality": {"filter": "PASS", "depth": 35, "genotype_quality": 90, "allele_balance": 0.43, "alt_read_count": 15, "mapping_quality": 60, "strand_bias_phred": 2.1, "in_low_complexity_or_repeat": false, "igv_assessment": {"image": "igv/C002_chr2_165310406.png", "verdict": "plausible", "observations": "Single-base deletion supported by 15/35 reads on both strands; not in a homopolymer run; call looks real."}, "qc_verdict": "pass"},
+      "population_frequency": {"gnomad_version": "v4.1", "gnomad_af_global": 0.0, "gnomad_af_popmax": 0.0, "gnomad_hom_count": 0, "consistent_with_disease": true},
+      "predictions": {"spliceai_max_ds": 0.0, "consensus": "uninformative"},
+      "gene_constraint": {"pli": 1.0, "loeuf": 0.08},
+      "clinvar": {"variation_id": null, "clinical_significance": "not_in_clinvar", "review_status": "n/a"},
+      "gene_disease": {
+        "associated_conditions": [
+          {"name": "Developmental and epileptic encephalopathy 11 (early onset, GoF)", "omim": "613721", "mondo": "MONDO:0013171", "inheritance": "AD", "clingen_validity": "Definitive"},
+          {"name": "Autism / later-onset seizures (LoF mechanism)", "omim": "", "mondo": "", "inheritance": "AD", "clingen_validity": "Definitive"}
+        ],
+        "phenotype_match": {"score": 0.41, "matched_hpo": ["HP:0001250", "HP:0001263"], "missing_cardinal_features": ["HP:0010851 burst-suppression typical of GoF SCN2A"], "discordant_features": ["Onset timing: SCN2A LoF typically causes LATER-onset seizures/autism, not neonatal DEE"], "notes": "Genotype-mechanism-phenotype mismatch: a LoF variant predicts the later-onset SCN2A phenotype, not this patient's neonatal GoF-type presentation."}
+      },
+      "literature": [{"pmid": "28379373", "title": "SCN2A gain- vs loss-of-function genotype-phenotype correlation", "year": 2017, "relevance": "same_gene_other_phenotype", "finding": "Early-onset (<3 mo) DEE is associated with gain-of-function missense; protein-truncating LoF variants associate with later seizures/autism."}],
+      "acmg": {
+        "applied_criteria": [
+          {"code": "PVS1", "direction": "pathogenic", "strength": "moderate", "applied": true, "rationale": "Frameshift in a LoF-intolerant gene, but located in the last exon with predicted NMD escape -> PVS1 downgraded to Moderate per ClinGen SVI decision tree.", "evidence_refs": [{"kind": "tool_output", "value": "LOFTEE=LC last-exon"}]},
+          {"code": "PM2", "direction": "pathogenic", "strength": "supporting", "applied": true, "rationale": "Absent from gnomAD v4.1.", "evidence_refs": [{"kind": "api_gnomad", "value": "absent"}]},
+          {"code": "BP5", "direction": "benign", "strength": "supporting", "applied": true, "rationale": "An alternate, fully concordant pathogenic variant (C001 in KCNQ2) explains the phenotype; weak evidence against SCN2A causation.", "evidence_refs": [{"kind": "inference", "value": "C001 Pathogenic, phenotype-concordant"}]}
+        ],
+        "considered_not_applied": [{"code": "PP4", "reason": "phenotype does NOT match the LoF-SCN2A presentation; deliberately withheld"}],
+        "classification": "Uncertain significance",
+        "point_score": 2,
+        "classification_method": "ACMG/AMP 2015 + ClinGen Bayesian points (Tavtigian 2020)",
+        "non_acmg_evidence": ["Mechanism mismatch (LoF vs required GoF) materially lowers prior probability of causation for THIS phenotype."]
+      },
+      "evidence_summary": "Rare, real last-exon frameshift in SCN2A. However, neonatal DEE in SCN2A is a gain-of-function disease; a LoF/PTC allele predicts the later-onset autism/seizure phenotype, which this patient does not have. Retained as a VUS and as a secondary finding rather than the diagnosis.",
+      "adversarial_review": {
+        "challenges": [
+          {"attack_surface": "phenotype_mismatch", "challenge": "LoF SCN2A does not cause neonatal GoF-type DEE; reporting it as causal would be a mechanism error.", "severity": "major", "status": "unrefuted", "rebuttal": "Proposer concedes; variant cannot be the primary cause of the neonatal presentation. Retained as VUS / secondary finding only.", "residual_risk": "Could be relevant to long-term autism risk; flagged for re-evaluation as phenotype evolves."},
+          {"attack_surface": "gene_disease_validity", "challenge": "Is the LoF mechanism even disease-relevant here?", "severity": "minor", "status": "mitigated", "rebuttal": "SCN2A LoF is disease-relevant but for a different, later-onset phenotype; not applicable to current cardinal features.", "residual_risk": "low"}
+        ],
+        "survives_review": true,
+        "confidence": "low",
+        "reviewer_verdict": "Do not report as the diagnosis. Report as a secondary VUS with explicit mechanism caveat; re-evaluate if an autism/later-seizure phenotype emerges."
+      },
+      "overall_assessment": {"candidacy": "weak", "is_primary_hypothesis": false, "summary": "Genuine rare SCN2A frameshift but mechanistically mismatched to the patient's neonatal GoF-type presentation. Kept as a low-confidence VUS / secondary finding, not the diagnosis."}
+    }
+  ],
+  "pending_evidence": [
+    {
+      "id": "PE001",
+      "related_candidates": ["C001"],
+      "category": "segregation",
+      "question": "Are both parents wild-type for KCNQ2 c.821C>T (i.e. is the variant de novo)?",
+      "rationale": "Confirming de novo origin upgrades PM6 to PS2 and, more importantly, establishes accurate recurrence-risk counselling (de novo ~1% recurrence via gonadal mosaicism vs 50% if a parent is mosaic/affected).",
+      "priority": "high",
+      "expected_impact": {"acmg_criteria_affected": ["PM6", "PS2"], "could_change_classification_from": "Pathogenic", "to": "Pathogenic (strengthened; counselling-defining)", "decisiveness": "confirmatory"}
+    },
+    {
+      "id": "PE002",
+      "related_candidates": ["C001"],
+      "category": "functional_experiment",
+      "question": "Does the p.Ala274Val substitution reduce KCNQ2/Kv7.2 M-current in a heterologous system?",
+      "rationale": "A patient/variant-specific electrophysiology result would supply PS3 and remove any residual doubt about the functional consequence of this specific substitution.",
+      "priority": "medium",
+      "expected_impact": {"acmg_criteria_affected": ["PS3"], "could_change_classification_from": "Pathogenic", "to": "Pathogenic (functionally confirmed)", "decisiveness": "supportive"},
+      "experimental_plan": {
+        "method": "Whole-cell patch-clamp electrophysiology of KCNQ2 variant in CHO/Xenopus expression system",
+        "objective": "Quantify the effect of p.Ala274Val on Kv7.2 (M-type) potassium current amplitude and voltage dependence, including a dominant-negative test by co-expression with wild-type.",
+        "hypothesis": "p.Ala274Val reduces M-current density relative to wild-type; co-expression with WT (mimicking the heterozygous state) yields current below the 50% expected for simple haploinsufficiency, indicating a dominant-negative effect.",
+        "protocol_outline": [
+          "Site-directed mutagenesis to introduce c.821C>T into a validated KCNQ2 cDNA construct; Sanger-confirm.",
+          "Transfect CHO cells with (a) WT KCNQ2, (b) mutant alone, (c) WT+mutant 1:1, each co-transfected with KCNQ3, plus GFP marker.",
+          "48 h post-transfection, whole-cell patch-clamp; voltage step protocol -80 to +40 mV.",
+          "Measure current density (pA/pF), V50 of activation, and activation/deactivation kinetics; n>=10 cells/condition across >=3 transfections.",
+          "Analyse blinded to genotype."
+        ],
+        "sample_requirements": "No patient sample required (heterologous system); requires validated KCNQ2/KCNQ3 constructs.",
+        "controls": ["WT KCNQ2+KCNQ3 (positive/normal current)", "untransfected / GFP-only (negative)", "a known pathogenic dominant-negative KCNQ2 variant (assay sensitivity control)", "a known benign KCNQ2 variant (specificity control)"],
+        "readout": "M-current density (pA/pF) and biophysical parameters per condition.",
+        "interpretation_framework": "PS3 supported if mutant-alone current is <50% of WT AND the WT+mutant condition is significantly below WT (p<0.05) with effect size comparable to the positive dominant-negative control. A current indistinguishable from WT would be evidence AGAINST pathogenicity (potential BS3).",
+        "limitations": ["Heterologous system may not capture neuronal context or auxiliary subunits.", "Does not establish in vivo causation, only molecular effect.", "Construct/expression artefacts can confound — mitigated by parallel benign/pathogenic controls."],
+        "estimated_turnaround": "6-10 weeks"
+      },
+      "plan_review": {
+        "critiques": [
+          {"issue": "Without a known dominant-negative positive control, a 'reduced current' result is hard to calibrate against the assay's dynamic range.", "severity": "major", "resolution": "Positive dominant-negative control already specified in controls; require it to pass before interpreting the test variant."},
+          {"issue": "M-current is KCNQ2/KCNQ3 heteromeric; testing KCNQ2 alone would under-represent physiology.", "severity": "minor", "resolution": "Protocol co-expresses KCNQ3 in all conditions."},
+          {"issue": "Result is supportive (PS3) but not decisive given C001 is already Pathogenic on existing evidence — weigh cost/turnaround against clinical value.", "severity": "minor", "resolution": "Down-prioritised to medium; PE001 (segregation) is the higher-value action."}
+        ],
+        "feasibility": "high",
+        "verdict": "recommended_with_changes"
+      }
+    },
+    {
+      "id": "PE003",
+      "related_candidates": ["C001"],
+      "category": "reanalysis",
+      "question": "Why did the v3 epilepsy panel not report KCNQ2 c.821C>T despite covering the gene?",
+      "rationale": "Clarifying whether this was a coverage gap, a filtering threshold, or a classification difference informs lab QA and confirms the WGS finding is not a false positive unique to this pipeline.",
+      "priority": "medium",
+      "expected_impact": {"acmg_criteria_affected": [], "could_change_classification_from": "Pathogenic", "to": "Pathogenic (orthogonally confirmed)", "decisiveness": "supportive"}
+    }
+  ],
+  "excluded_variants_summary": [
+    {"locus": "chr1:11796321 C>T", "gene": "MTHFR", "stage_excluded": "frequency", "reason": "gnomAD AF 0.31 (BA1) — common polymorphism, not disease-causing.", "evidence_ref": "api_gnomad rs1801133"},
+    {"locus": "chr7:117559593 G>A", "gene": "CFTR", "stage_excluded": "phenotype_mismatch", "reason": "Pathogenic for cystic fibrosis but no phenotypic overlap with neonatal epileptic encephalopathy; incidental carrier finding.", "evidence_ref": "gene_disease phenotype score 0.02"},
+    {"locus": "chr15:42680000-42690000 DEL", "gene": "(intergenic)", "stage_excluded": "adversarial_review", "reason": "10 kb deletion call failed IGV review: both breakpoints in segmental duplication, supported by soft-clipped reads only, no discordant pairs — technical artifact (unrefuted fatal challenge).", "evidence_ref": "igv C_SV breakpoint in segdup"}
+  ],
+  "run_summary": {
+    "headline": "A Pathogenic de novo (presumed) KCNQ2 pore-domain variant explains this neonatal epileptic encephalopathy and was missed by the prior gene panel. One secondary VUS (SCN2A) is retained with a mechanism caveat.",
+    "n_variants_in": 4812334,
+    "n_after_qc": 4120556,
+    "n_after_frequency": 1184,
+    "n_candidates_reported": 2,
+    "top_candidate_id": "C001",
+    "diagnostic_conclusion": "likely_solved"
+  }
+}
